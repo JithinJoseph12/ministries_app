@@ -1,0 +1,828 @@
+"use client";
+
+import { AlignCenter, AlignLeft, AlignRight, Bold, CalendarClock, CalendarDays, Check, ChevronDown, FileText, ImagePlus, Italic, Lightbulb, List, ListOrdered, MapPin, Redo2, Underline, Undo2 } from "lucide-react";
+import { useState } from "react";
+
+export default function AddEventPage() {
+  const [eventData, setEventData] = useState({
+    title: "",
+    category: "",
+    hostMinistry: "",
+    shortDescription: "",
+    description: "",
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+    allDay: false,
+    venue: "",
+    address: "",
+    city: "",
+    state: "",
+    zip: "",
+    mapUrl: "",
+    registrationLink: "",
+    contactPerson: "",
+    contactEmail: "",
+    contactPhone: "",
+    status: "Published",
+    visibility: "Public",
+    featured: false,
+    allowRegistration: true,
+    registrationUrl: "",
+  });
+
+  const [imageFile, setImageFile] = useState(null);
+  const [charCount, setCharCount] = useState(0);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEventData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleDescriptionChange = (e) => {
+    const value = e.target.value;
+    setEventData((prev) => ({ ...prev, description: value }));
+    setCharCount(value.length);
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) setImageFile(file);
+  };
+
+  const handleSubmit = (e, action) => {
+    e.preventDefault();
+    console.log(`Action: ${action}`, eventData, imageFile);
+    alert(`Event ${action === "publish" ? "published" : "saved as draft"}!`);
+  };
+
+  return (
+    <div className="min-h-screen bg-white">
+      <main className="flex-1">
+        <div className="p-8 max-w-[1400px] mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="text-sm text-gray-500 mb-1">Events / Add New Event</div>
+            <h1 className="text-3xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#1e3a8a" }}>Add New Event</h1>
+            <p className="text-gray-500 mt-1">Fill in the details below to create a new event.</p>
+          </div>
+
+          <form onSubmit={(e) => handleSubmit(e, "publish")}>
+            <div className="grid lg:grid-cols-12 gap-8">
+              {/* Left Column */}
+              <div className="lg:col-span-8 space-y-8">
+                {/* 1. Event Information */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+<div className="flex items-center gap-3 mb-5">
+  <div
+    className="w-9 h-9 rounded-full flex items-center justify-center"
+    style={{
+      backgroundColor: "#EEF4FF",
+      border: "1px solid #DCE6F8",
+    }}
+  >
+    <CalendarDays
+      size={18}
+      strokeWidth={2}
+      style={{ color: "#3B5FBF" }}
+    />
+  </div>
+
+  <h2
+    className="text-xl font-semibold"
+    style={{
+      fontFamily: "'Playfair Display', serif",
+      color: "#1e3a8a",
+    }}
+  >
+    1. Event Information
+  </h2>
+</div>                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Event Title</label>
+                      <input
+                        name="title"
+                        value={eventData.title}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        placeholder="Enter event title"
+                      />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
+                        <select
+                          name="category"
+                          value={eventData.category}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                        >
+                          <option value="">Select category</option>
+                          <option>Worship Service</option>
+                          <option>Bible Study</option>
+                          <option>Youth Event</option>
+                          <option>Community Outreach</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Host Ministry</label>
+                        <select
+                          name="hostMinistry"
+                          value={eventData.hostMinistry}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                        >
+                          <option value="">Select ministry</option>
+                          <option>Worship</option>
+                          <option>Youth</option>
+                          <option>Children</option>
+                          <option>Outreach</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Short Description</label>
+                      <input
+                        name="shortDescription"
+                        value={eventData.shortDescription}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="Brief summary of the event (optional)"
+                        maxLength={150}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-sm font-semibold text-gray-700">Full Description</label>
+                        <span className="text-xs text-gray-400">{charCount}/60 minimum</span>
+                      </div>
+  <div
+    className="rounded-xl overflow-hidden"
+    style={{
+      border: "1px solid #e8edf5",
+      background: "#fff",
+    }}
+  >
+    {/* Toolbar */}
+
+    <div
+      className="flex items-center gap-4 px-4 h-11 border-b"
+      style={{ borderColor: "#e8edf5" }}
+    >
+      <button
+        type="button"
+        className="flex items-center gap-1 text-sm"
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          color: "#243B63",
+        }}
+      >
+        Paragraph
+        <ChevronDown size={14} />
+      </button>
+
+      <Bold size={15} />
+
+      <Italic size={15} />
+
+      <Underline size={15} />
+
+      <List size={15} />
+
+      <ListOrdered size={15} />
+
+      <AlignLeft size={15} />
+
+      <AlignCenter size={15} />
+
+      <AlignRight size={15} />
+
+      <Undo2
+        size={15}
+        className="ml-auto text-gray-400"
+      />
+
+      <Redo2
+        size={15}
+        className="text-gray-400"
+      />
+    </div>
+
+    {/* Textarea */}
+
+    <textarea
+      name="description"
+      value={eventData.description}
+      onChange={handleDescriptionChange}
+      placeholder="Provide full details about the event, including what attendees can expect..."
+      className="w-full resize-none outline-none p-4"
+      style={{
+        height: "180px",
+        fontFamily: "'Inter', sans-serif",
+        fontSize: "15px",
+        color: "#243B63",
+      }}
+    />
+
+    {/* Bottom counter */}
+
+    <div
+      className="flex justify-end px-4 py-2 text-xs"
+      style={{
+        color: "#9AAAC0",
+        borderTop: "1px solid #f5f7fb",
+      }}
+    >
+      {eventData.description.length}/2000
+    </div>
+  </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Date & Time */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+
+<div className="flex items-center gap-3 mb-5">
+  <div
+    className="w-9 h-9 rounded-full flex items-center justify-center"
+    style={{
+      backgroundColor: "#EEF4FF",
+      border: "1px solid #DCE6F8",
+    }}
+  >
+    <CalendarClock
+      size={18}
+      strokeWidth={2}
+      style={{ color: "#3B5FBF" }}
+    />
+  </div>
+
+  <h2
+    className="text-xl font-semibold"
+    style={{
+      fontFamily: "'Playfair Display', serif",
+      color: "#1e3a8a",
+    }}
+  >
+    2. Date & Time
+  </h2>
+</div>                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Start Date</label>
+                      <input
+                        name="startDate"
+                        type="date"
+                        value={eventData.startDate}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Start Time</label>
+                      <input
+                        name="startTime"
+                        type="time"
+                        value={eventData.startTime}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">End Date</label>
+                      <input
+                        name="endDate"
+                        type="date"
+                        value={eventData.endDate}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">End Time</label>
+                      <input
+                        name="endTime"
+                        type="time"
+                        value={eventData.endTime}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 mt-4 text-sm text-gray-700">
+                    <input
+                      name="allDay"
+                      type="checkbox"
+                      checked={eventData.allDay}
+                      onChange={handleChange}
+                      className="rounded border-gray-300"
+                    />
+                    All Day Event
+                  </label>
+                </div>
+
+                {/* 3. Location */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+
+<div className="flex items-center gap-3 mb-5">
+  <div
+    className="w-9 h-9 rounded-full flex items-center justify-center"
+    style={{
+      backgroundColor: "#EEF4FF",
+      border: "1px solid #DCE6F8",
+    }}
+  >
+    <MapPin
+      size={18}
+      strokeWidth={2}
+      style={{ color: "#3B5FBF" }}
+    />
+  </div>
+
+  <h2
+    className="text-xl font-semibold"
+    style={{
+      fontFamily: "'Playfair Display', serif",
+      color: "#1e3a8a",
+    }}
+  >
+    3. Location
+  </h2>
+</div>                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Venue / Location Name</label>
+                      <input
+                        name="venue"
+                        value={eventData.venue}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="Enter venue or location name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Address</label>
+                      <input
+                        name="address"
+                        value={eventData.address}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="Street address"
+                      />
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">City</label>
+                        <input
+                          name="city"
+                          value={eventData.city}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                          placeholder="Enter city"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">State</label>
+                        <select
+                          name="state"
+                          value={eventData.state}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                        >
+                          <option value="">Select state</option>
+                          <option>CA</option>
+                          <option>NY</option>
+                          <option>TX</option>
+                          <option>FL</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">ZIP Code</label>
+                        <input
+                          name="zip"
+                          value={eventData.zip}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                          placeholder="Enter ZIP code"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Google Maps Link (optional)</label>
+                      <input
+                        name="mapUrl"
+                        value={eventData.mapUrl}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="https://maps.google.com/..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Additional Details */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+<div className="flex items-center gap-3 mb-5">
+  <div
+    className="w-9 h-9 rounded-full flex items-center justify-center"
+    style={{
+      backgroundColor: "#EEF4FF",
+      border: "1px solid #DCE6F8",
+    }}
+  >
+    <FileText
+      size={18}
+      strokeWidth={2}
+      style={{ color: "#3B5FBF" }}
+    />
+  </div>
+
+  <h2
+    className="text-xl font-semibold"
+    style={{
+      fontFamily: "'Playfair Display', serif",
+      color: "#1e3a8a",
+    }}
+  >
+    4. Additional Details
+  </h2>
+</div>                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Event Link (optional)</label>
+                      <input
+                        name="registrationLink"
+                        value={eventData.registrationLink}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="https://yourwebsite.com/event"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Person (optional)</label>
+                      <input
+                        name="contactPerson"
+                        value={eventData.contactPerson}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="Enter name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Email (optional)</label>
+                      <input
+                        name="contactEmail"
+                        type="email"
+                        value={eventData.contactEmail}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="email@example.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Phone (optional)</label>
+                      <input
+                        name="contactPhone"
+                        value={eventData.contactPhone}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="(123) 456-7890"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Event Image */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+<div className="flex items-center gap-3 mb-5">
+  <div
+    className="w-9 h-9 rounded-full flex items-center justify-center"
+    style={{
+      backgroundColor: "#EEF4FF",
+      border: "1px solid #DCE6F8",
+    }}
+  >
+    <ImagePlus
+      size={18}
+      strokeWidth={2}
+      style={{ color: "#3B5FBF" }}
+    />
+  </div>
+
+  <h2
+    className="text-xl font-semibold"
+    style={{
+      fontFamily: "'Playfair Display', serif",
+      color: "#1e3a8a",
+    }}
+  >
+    5. Event Image
+  </h2>
+</div>                  <div className="grid md:grid-cols-3 gap-6 items-center">
+                    <div className="md:col-span-2 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-gray-400 transition cursor-pointer bg-gray-50">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="imageUpload"
+                      />
+                      <label htmlFor="imageUpload" className="cursor-pointer block">
+                        <div className="text-3xl mb-2">⬆️</div>
+                        <div className="text-gray-600 font-medium">Click to upload an image</div>
+                        <div className="text-xs text-gray-400 mt-1">PNG, JPG or WEBP (Max. 5MB)</div>
+                        {imageFile && <p className="text-sm text-green-600 mt-2">{imageFile.name}</p>}
+                      </label>
+                    </div>
+                    <div className="text-xs text-gray-500 space-y-1">
+                      <p>• Recommended size: 1200x630px</p>
+                      <p>• This image will appear in event cards</p>
+                      <p>• Choose a high-quality, relevant image</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-3 pt-2 pb-8">
+                  <button type="button" className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleSubmit(e, "draft")}
+                    className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition"
+                  >
+                    Save as Draft
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 transition shadow-sm"
+                  >
+                    Publish Event
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Column - Sidebar */}
+              <div className="lg:col-span-4 space-y-6">
+                {/* Publish Settings */}
+<div className="bg-white rounded-2xl border border-[#e8edf5] p-6 shadow-sm  top-6">
+
+  {/* Header */}
+  <div className="flex items-center gap-3 mb-6">
+    <div
+      className="w-10 h-10 rounded-full flex items-center justify-center"
+      style={{ background: "#EAF8EE" }}
+    >
+      <CalendarDays
+        size={18}
+        strokeWidth={2}
+        style={{ color: "#4CAF72" }}
+      />
+    </div>
+
+    <h3
+      style={{
+        fontFamily: "'Playfair Display', serif",
+        fontSize: "28px",
+        fontWeight: 700,
+        color: "#1e3a8a",
+      }}
+    >
+      Publish Settings
+    </h3>
+  </div>
+
+  <div className="space-y-6">
+
+    {/* Status */}
+    <div>
+      <label
+        className="block mb-2"
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          fontWeight: 700,
+          fontSize: "15px",
+          color: "#243B63",
+        }}
+      >
+        Status
+      </label>
+
+      <select
+        name="status"
+        value={eventData.status}
+        onChange={handleChange}
+        className="w-full rounded-lg border border-[#e8edf5] px-3 py-2 bg-white outline-none"
+      >
+        <option>Published</option>
+        <option>Draft</option>
+        <option>Scheduled</option>
+      </select>
+
+      <p className="mt-2 text-xs text-[#8A97AE]">
+        Published events are visible to everyone.
+      </p>
+    </div>
+
+    {/* Visibility */}
+
+    <div>
+      <label
+        className="block mb-2"
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          fontWeight: 700,
+          fontSize: "15px",
+          color: "#243B63",
+        }}
+      >
+        Visibility
+      </label>
+
+      <select
+        name="visibility"
+        value={eventData.visibility}
+        onChange={handleChange}
+        className="w-full rounded-lg border border-[#e8edf5] px-3 py-2 bg-white outline-none"
+      >
+        <option>Public</option>
+        <option>Private</option>
+        <option>Members Only</option>
+      </select>
+
+      <p className="mt-2 text-xs text-[#8A97AE]">
+        Public events are shown on the website.
+      </p>
+    </div>
+
+    {/* Featured */}
+
+    <div className="flex items-center justify-between">
+      <div>
+        <p
+          style={{
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 700,
+            color: "#243B63",
+            fontSize: "15px",
+          }}
+        >
+          Featured Event
+        </p>
+
+        <p className="text-xs text-[#8A97AE] mt-1">
+          Show this event in the featured section.
+        </p>
+      </div>
+
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          name="featured"
+          checked={eventData.featured}
+          onChange={handleChange}
+          className="sr-only peer"
+        />
+
+        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-[#34C759] after:content-[''] after:absolute after:left-[2px] after:top-[2px] after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+      </label>
+    </div>
+
+    {/* Registration */}
+
+    <div className="flex items-center justify-between">
+      <div>
+        <p
+          style={{
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 700,
+            color: "#243B63",
+            fontSize: "15px",
+          }}
+        >
+          Allow Registration
+        </p>
+
+        <p className="text-xs text-[#8A97AE] mt-1">
+          Allow users to register for this event.
+        </p>
+      </div>
+
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          name="allowRegistration"
+          checked={eventData.allowRegistration}
+          onChange={handleChange}
+          className="sr-only peer"
+        />
+
+        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-[#34C759] after:content-[''] after:absolute after:left-[2px] after:top-[2px] after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+      </label>
+    </div>
+
+    {/* Registration Link */}
+
+    <div>
+      <label
+        className="block mb-2"
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          fontWeight: 700,
+          fontSize: "15px",
+          color: "#243B63",
+        }}
+      >
+        Registration Link (optional)
+      </label>
+
+      <input
+        name="registrationUrl"
+        value={eventData.registrationUrl}
+        onChange={handleChange}
+        placeholder="https://..."
+        className="w-full rounded-lg border border-[#e8edf5] px-3 py-2 outline-none"
+      />
+
+      <p className="mt-2 text-xs text-[#8A97AE]">
+        Link to registration page or form.
+      </p>
+    </div>
+  </div>
+</div>
+
+                {/* Tips */}
+<div className="bg-white rounded-2xl border border-[#e8edf5] p-6 shadow-sm">
+  {/* Heading */}
+  <div className="flex items-center gap-3 mb-5">
+    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFF8E8]">
+      <Lightbulb
+        size={18}
+        strokeWidth={2}
+        style={{ color: "#D4A017" }}
+      />
+    </div>
+
+    <h3
+      style={{
+        fontFamily: "'Playfair Display', serif",
+        fontSize: "22px",
+        fontWeight: 700,
+        color: "#1e3a8a",
+      }}
+    >
+      Tips
+    </h3>
+  </div>
+
+  {/* Tips */}
+  <ul className="space-y-4">
+    {[
+      "Use a clear and descriptive title",
+      "Add a short description for listing",
+      "Include all important details",
+      "Choose an engaging image",
+      "Review before publishing",
+    ].map((item, index) => (
+      <li key={index} className="flex items-center gap-3">
+        <Check
+          size={16}
+          strokeWidth={3}
+          style={{ color: "#4CAF72", flexShrink: 0 }}
+        />
+
+        <span
+          style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: "15px",
+            fontWeight: 500,
+            color: "#243B63",
+            lineHeight: "1.6",
+          }}
+        >
+          {item}
+        </span>
+      </li>
+    ))}
+  </ul>
+</div>
+
+                {/* Need Help */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                  <h3 className="font-semibold text-[22px] mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "#1e3a8a" }}>🎧 Need Help?</h3>
+                  <p className="text-sm text-gray-500 mb-4">If you need assistance adding your event, our team is here to help.</p>
+                  <button type="button" className=" border border-gray-300 rounded-lg px-4 py-2 text-blue-700 font-medium hover:bg-gray-50 transition text-left">
+                    Contact Support
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  );
+}
