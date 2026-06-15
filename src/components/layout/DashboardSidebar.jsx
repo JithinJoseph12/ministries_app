@@ -262,17 +262,7 @@ export default function DashboardSidebar() {
                         </p>
                     </div>
                 </div>
-                <button
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-md"
-                    style={{
-                        color: "#a8b8d4",
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: "14px",
-                    }}
-                >
-                    <LogOut size={14} />
-                    <span>Sign Out</span>
-                </button>
+
             </div>
         </aside>
     );

@@ -1,5 +1,6 @@
 // components/sections/Hero.jsx
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Hero() {
   return (
@@ -19,12 +20,12 @@ export default function Hero() {
             to foster charity, collaboration, visibility, and shared resources.
           </p>
           <div className="flex gap-[18px] text-sm">
-            <button className="px-[24px] py-[13px] rounded-[14px] font-semibold bg-[#0a4cdf] text-white transition-all duration-300 hover:-translate-y-[2px]">
+            <Link href="/ministries" className="px-[24px] py-[13px] rounded-[14px] font-semibold bg-[#0a4cdf] text-white transition-all duration-300 hover:-translate-y-[2px]">
               Explore Ministries
-            </button>
-            <button className="px-[24px] py-[13px] rounded-[14px] font-semibold bg-white border border-[#dbe2ef] text-[#10295c] transition-all duration-300 hover:-translate-y-[2px]">
+            </Link>
+            <Link href="/events" className="px-[24px] py-[13px] rounded-[14px] font-semibold bg-white border border-[#dbe2ef] text-[#10295c] transition-all duration-300 hover:-translate-y-[2px]">
               View Upcoming Events
-            </button>
+            </Link>
           </div>
         </div>
 

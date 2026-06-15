@@ -188,11 +188,12 @@ const MinistryPage = () => {
     }
   };
 
+  const [currentStep, setCurrentStep] = useState(0);
+
   const steps = [
   {
     icon: Info,
     label: "General Information",
-    active: true,
   },
   {
     icon: Users,
@@ -235,14 +236,16 @@ const MinistryPage = () => {
 >
   {steps.map((step, index) => {
     const Icon = step.icon;
+    const isActive = index === currentStep;
 
     return (
       <button
         key={index}
         type="button"
-        className="relative flex-1 h-full flex items-center justify-center gap-2 transition-all"
+        onClick={() => setCurrentStep(index)}
+        className="relative flex-1 h-full flex items-center justify-center gap-2 transition-all hover:bg-gray-50"
       >
-        {step.active && (
+        {isActive && (
           <div
             className="absolute bottom-0 left-0 w-full"
             style={{
@@ -256,7 +259,7 @@ const MinistryPage = () => {
           size={18}
           strokeWidth={2}
           style={{
-            color: step.active ? "#D6A646" : "#6B7280",
+            color: isActive ? "#D6A646" : "#6B7280",
           }}
         />
 
@@ -265,7 +268,7 @@ const MinistryPage = () => {
             fontFamily: "'Inter', sans-serif",
             fontSize: "14px",
             fontWeight: 600,
-            color: step.active ? "#D6A646" : "#243B63",
+            color: isActive ? "#D6A646" : "#243B63",
           }}
         >
           {step.label}

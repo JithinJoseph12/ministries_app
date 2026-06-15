@@ -160,6 +160,7 @@ const ministriesWithEvents = [
             { id: 101, title: "Formation Night", date: "May 28, 2026", time: "7:00 PM" }
         ],
         image: "/images/ministries/hogl.jpg",
+        link: "https://www.houseofgodslight.com",
     },
     {
         id: 2,
@@ -170,6 +171,7 @@ const ministriesWithEvents = [
             { id: 102, title: "Pro-Life Prayer Vigil", date: "June 7, 2026", time: "9:00 AM" }
         ],
         image: "/images/ministries/life-runners.jpg",
+        link: "https://www.liferunners.org",
     },
     {
         id: 3,
@@ -180,6 +182,7 @@ const ministriesWithEvents = [
             { id: 103, title: "Family Prayer Evening", date: "June 3, 2026", time: "7:00 PM" }
         ],
         image: "/images/ministries/militia.jpg",
+        link: "https://militiaoftheimmaculata.com",
     },
     {
         id: 4,
@@ -190,6 +193,7 @@ const ministriesWithEvents = [
             { id: 104, title: "Men Through Mary Retreat", date: "May 30, 2026", time: "8:00 AM" }
         ],
         image: "/images/ministries/knights.jpg",
+        link: "#",
     },
 ];
 
@@ -1020,11 +1024,14 @@ export default function EventsPage() {
                                             {event.date} • {event.time}
                                         </p>
 
-                                        <button
-                                            className="mt-3 text-sm font-semibold text-[#3157C9]"
+                                        <a
+                                            href={ministry.link || "#"}
+                                            target={ministry.link !== "#" ? "_blank" : undefined}
+                                            rel={ministry.link !== "#" ? "noopener noreferrer" : undefined}
+                                            className="mt-3 text-sm font-semibold text-[#3157C9] inline-block"
                                         >
                                             View Ministry →
-                                        </button>
+                                        </a>
 
                                     </div>
 
