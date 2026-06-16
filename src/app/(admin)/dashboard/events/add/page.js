@@ -34,6 +34,8 @@ export default function AddEventPage() {
 
   const [imageFile, setImageFile] = useState(null);
   const [charCount, setCharCount] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -54,14 +56,58 @@ export default function AddEventPage() {
     if (file) setImageFile(file);
   };
 
-  const handleSubmit = (e, action) => {
+  const handleSubmit = async (e, action) => {
     e.preventDefault();
-    console.log(`Action: ${action}`, eventData, imageFile);
-    alert(`Event ${action === "publish" ? "published" : "saved as draft"}!`);
+    if (action === "publish") {
+      try {
+        setIsSubmitting(true);
+        const response = await fetch("/api/events", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(eventData),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setShowSuccessPopup(true);
+          setTimeout(() => setShowSuccessPopup(false), 3000);
+
+          // Optionally reset form:
+          // setEventData({ ...initialState });
+        } else {
+          alert(`Error: ${data.message || "Failed to publish event"}`);
+        }
+      } catch (error) {
+        console.error("Submit error:", error);
+        alert("An error occurred while publishing the event.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      console.log(`Action: ${action}`, eventData, imageFile);
+      alert(`Event saved as draft successfully!`);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white relative">
+      {/* Animated Success Popup */}
+      <div
+        className={`fixed top-6 right-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 transition-all duration-500 z-50 ${showSuccessPopup ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none"
+          }`}
+      >
+        <div className="bg-emerald-100 p-1.5 rounded-full">
+          <Check className="w-5 h-5 text-emerald-600" />
+        </div>
+        <div>
+          <h4 className="font-semibold text-emerald-900">Successfully Added</h4>
+          <p className="text-sm text-emerald-700">The event has been published.</p>
+        </div>
+      </div>
+
       <main className="flex-1">
         <div className="p-8 max-w-[1400px] mx-auto">
           {/* Header */}
@@ -77,33 +123,33 @@ export default function AddEventPage() {
               <div className="lg:col-span-8 space-y-8">
                 {/* 1. Event Information */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-<div className="flex items-center gap-3 mb-5">
-  <div
-    className="w-9 h-9 rounded-full flex items-center justify-center"
-    style={{
-      backgroundColor: "#EEF4FF",
-      border: "1px solid #DCE6F8",
-    }}
-  >
-    <CalendarDays
-      size={18}
-      strokeWidth={2}
-      style={{ color: "#3B5FBF" }}
-    />
-  </div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: "#EEF4FF",
+                        border: "1px solid #DCE6F8",
+                      }}
+                    >
+                      <CalendarDays
+                        size={18}
+                        strokeWidth={2}
+                        style={{ color: "#3B5FBF" }}
+                      />
+                    </div>
 
-  <h2
-    className="text-xl font-semibold"
-    style={{
-      fontFamily: "'Playfair Display', serif",
-      color: "#1e3a8a",
-    }}
-  >
-    1. Event Information
-  </h2>
-</div>                  <div className="space-y-4">
+                    <h2
+                      className="text-xl font-semibold"
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        color: "#1e3a8a",
+                      }}
+                    >
+                      1. Event Information
+                    </h2>
+                  </div>                  <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Event Title</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Event Title <span className="text-red-500">*</span></label>
                       <input
                         name="title"
                         value={eventData.title}
@@ -114,7 +160,7 @@ export default function AddEventPage() {
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
                         <select
                           name="category"
                           value={eventData.category}
@@ -137,10 +183,12 @@ export default function AddEventPage() {
                           className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                         >
                           <option value="">Select ministry</option>
-                          <option>Worship</option>
-                          <option>Youth</option>
-                          <option>Children</option>
-                          <option>Outreach</option>
+                          <option value="A Baby's Breath">A Baby's Breath</option>
+                          <option value="House of God's Light">House of God's Light</option>
+                          <option value="Life Runners">Life Runners</option>
+                          <option value="Gianna Center">Gianna Center</option>
+                          <option value="Militia of Immaculata">Militia of Immaculata</option>
+                          <option value="Society of St. Vincent">Society of St. Vincent</option>
                         </select>
                       </div>
                     </div>
@@ -160,86 +208,86 @@ export default function AddEventPage() {
                         <label className="block text-sm font-semibold text-gray-700">Full Description</label>
                         <span className="text-xs text-gray-400">{charCount}/60 minimum</span>
                       </div>
-  <div
-    className="rounded-xl overflow-hidden"
-    style={{
-      border: "1px solid #e8edf5",
-      background: "#fff",
-    }}
-  >
-    {/* Toolbar */}
+                      <div
+                        className="rounded-xl overflow-hidden"
+                        style={{
+                          border: "1px solid #e8edf5",
+                          background: "#fff",
+                        }}
+                      >
+                        {/* Toolbar */}
 
-    <div
-      className="flex items-center gap-4 px-4 h-11 border-b"
-      style={{ borderColor: "#e8edf5" }}
-    >
-      <button
-        type="button"
-        className="flex items-center gap-1 text-sm"
-        style={{
-          fontFamily: "'Inter', sans-serif",
-          color: "#243B63",
-        }}
-      >
-        Paragraph
-        <ChevronDown size={14} />
-      </button>
+                        <div
+                          className="flex items-center gap-4 px-4 h-11 border-b"
+                          style={{ borderColor: "#e8edf5" }}
+                        >
+                          <button
+                            type="button"
+                            className="flex items-center gap-1 text-sm"
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              color: "#243B63",
+                            }}
+                          >
+                            Paragraph
+                            <ChevronDown size={14} />
+                          </button>
 
-      <Bold size={15} />
+                          <Bold size={15} />
 
-      <Italic size={15} />
+                          <Italic size={15} />
 
-      <Underline size={15} />
+                          <Underline size={15} />
 
-      <List size={15} />
+                          <List size={15} />
 
-      <ListOrdered size={15} />
+                          <ListOrdered size={15} />
 
-      <AlignLeft size={15} />
+                          <AlignLeft size={15} />
 
-      <AlignCenter size={15} />
+                          <AlignCenter size={15} />
 
-      <AlignRight size={15} />
+                          <AlignRight size={15} />
 
-      <Undo2
-        size={15}
-        className="ml-auto text-gray-400"
-      />
+                          <Undo2
+                            size={15}
+                            className="ml-auto text-gray-400"
+                          />
 
-      <Redo2
-        size={15}
-        className="text-gray-400"
-      />
-    </div>
+                          <Redo2
+                            size={15}
+                            className="text-gray-400"
+                          />
+                        </div>
 
-    {/* Textarea */}
+                        {/* Textarea */}
 
-    <textarea
-      name="description"
-      value={eventData.description}
-      onChange={handleDescriptionChange}
-      placeholder="Provide full details about the event, including what attendees can expect..."
-      className="w-full resize-none outline-none p-4"
-      style={{
-        height: "180px",
-        fontFamily: "'Inter', sans-serif",
-        fontSize: "15px",
-        color: "#243B63",
-      }}
-    />
+                        <textarea
+                          name="description"
+                          value={eventData.description}
+                          onChange={handleDescriptionChange}
+                          placeholder="Provide full details about the event, including what attendees can expect..."
+                          className="w-full resize-none outline-none p-4"
+                          style={{
+                            height: "180px",
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: "15px",
+                            color: "#243B63",
+                          }}
+                        />
 
-    {/* Bottom counter */}
+                        {/* Bottom counter */}
 
-    <div
-      className="flex justify-end px-4 py-2 text-xs"
-      style={{
-        color: "#9AAAC0",
-        borderTop: "1px solid #f5f7fb",
-      }}
-    >
-      {eventData.description.length}/2000
-    </div>
-  </div>
+                        <div
+                          className="flex justify-end px-4 py-2 text-xs"
+                          style={{
+                            color: "#9AAAC0",
+                            borderTop: "1px solid #f5f7fb",
+                          }}
+                        >
+                          {eventData.description.length}/2000
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -247,33 +295,33 @@ export default function AddEventPage() {
                 {/* 2. Date & Time */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
 
-<div className="flex items-center gap-3 mb-5">
-  <div
-    className="w-9 h-9 rounded-full flex items-center justify-center"
-    style={{
-      backgroundColor: "#EEF4FF",
-      border: "1px solid #DCE6F8",
-    }}
-  >
-    <CalendarClock
-      size={18}
-      strokeWidth={2}
-      style={{ color: "#3B5FBF" }}
-    />
-  </div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: "#EEF4FF",
+                        border: "1px solid #DCE6F8",
+                      }}
+                    >
+                      <CalendarClock
+                        size={18}
+                        strokeWidth={2}
+                        style={{ color: "#3B5FBF" }}
+                      />
+                    </div>
 
-  <h2
-    className="text-xl font-semibold"
-    style={{
-      fontFamily: "'Playfair Display', serif",
-      color: "#1e3a8a",
-    }}
-  >
-    2. Date & Time
-  </h2>
-</div>                  <div className="grid md:grid-cols-2 gap-4">
+                    <h2
+                      className="text-xl font-semibold"
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        color: "#1e3a8a",
+                      }}
+                    >
+                      2. Date & Time
+                    </h2>
+                  </div>                  <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Start Date</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Start Date <span className="text-red-500">*</span></label>
                       <input
                         name="startDate"
                         type="date"
@@ -328,31 +376,31 @@ export default function AddEventPage() {
                 {/* 3. Location */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
 
-<div className="flex items-center gap-3 mb-5">
-  <div
-    className="w-9 h-9 rounded-full flex items-center justify-center"
-    style={{
-      backgroundColor: "#EEF4FF",
-      border: "1px solid #DCE6F8",
-    }}
-  >
-    <MapPin
-      size={18}
-      strokeWidth={2}
-      style={{ color: "#3B5FBF" }}
-    />
-  </div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: "#EEF4FF",
+                        border: "1px solid #DCE6F8",
+                      }}
+                    >
+                      <MapPin
+                        size={18}
+                        strokeWidth={2}
+                        style={{ color: "#3B5FBF" }}
+                      />
+                    </div>
 
-  <h2
-    className="text-xl font-semibold"
-    style={{
-      fontFamily: "'Playfair Display', serif",
-      color: "#1e3a8a",
-    }}
-  >
-    3. Location
-  </h2>
-</div>                  <div className="space-y-4">
+                    <h2
+                      className="text-xl font-semibold"
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        color: "#1e3a8a",
+                      }}
+                    >
+                      3. Location
+                    </h2>
+                  </div>                  <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Venue / Location Name</label>
                       <input
@@ -425,31 +473,31 @@ export default function AddEventPage() {
 
                 {/* 4. Additional Details */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-<div className="flex items-center gap-3 mb-5">
-  <div
-    className="w-9 h-9 rounded-full flex items-center justify-center"
-    style={{
-      backgroundColor: "#EEF4FF",
-      border: "1px solid #DCE6F8",
-    }}
-  >
-    <FileText
-      size={18}
-      strokeWidth={2}
-      style={{ color: "#3B5FBF" }}
-    />
-  </div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: "#EEF4FF",
+                        border: "1px solid #DCE6F8",
+                      }}
+                    >
+                      <FileText
+                        size={18}
+                        strokeWidth={2}
+                        style={{ color: "#3B5FBF" }}
+                      />
+                    </div>
 
-  <h2
-    className="text-xl font-semibold"
-    style={{
-      fontFamily: "'Playfair Display', serif",
-      color: "#1e3a8a",
-    }}
-  >
-    4. Additional Details
-  </h2>
-</div>                  <div className="grid md:grid-cols-2 gap-4">
+                    <h2
+                      className="text-xl font-semibold"
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        color: "#1e3a8a",
+                      }}
+                    >
+                      4. Additional Details
+                    </h2>
+                  </div>                  <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Event Link (optional)</label>
                       <input
@@ -496,31 +544,31 @@ export default function AddEventPage() {
 
                 {/* 5. Event Image */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-<div className="flex items-center gap-3 mb-5">
-  <div
-    className="w-9 h-9 rounded-full flex items-center justify-center"
-    style={{
-      backgroundColor: "#EEF4FF",
-      border: "1px solid #DCE6F8",
-    }}
-  >
-    <ImagePlus
-      size={18}
-      strokeWidth={2}
-      style={{ color: "#3B5FBF" }}
-    />
-  </div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: "#EEF4FF",
+                        border: "1px solid #DCE6F8",
+                      }}
+                    >
+                      <ImagePlus
+                        size={18}
+                        strokeWidth={2}
+                        style={{ color: "#3B5FBF" }}
+                      />
+                    </div>
 
-  <h2
-    className="text-xl font-semibold"
-    style={{
-      fontFamily: "'Playfair Display', serif",
-      color: "#1e3a8a",
-    }}
-  >
-    5. Event Image
-  </h2>
-</div>                  <div className="grid md:grid-cols-3 gap-6 items-center">
+                    <h2
+                      className="text-xl font-semibold"
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        color: "#1e3a8a",
+                      }}
+                    >
+                      5. Event Image
+                    </h2>
+                  </div>                  <div className="grid md:grid-cols-3 gap-6 items-center">
                     <div className="md:col-span-2 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-gray-400 transition cursor-pointer bg-gray-50">
                       <input
                         type="file"
@@ -558,9 +606,10 @@ export default function AddEventPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 transition shadow-sm"
+                    disabled={isSubmitting}
+                    className="px-6 py-2.5 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 transition shadow-sm disabled:bg-blue-400"
                   >
-                    Publish Event
+                    {isSubmitting ? "Publishing..." : "Publish Event"}
                   </button>
                 </div>
               </div>
@@ -568,247 +617,247 @@ export default function AddEventPage() {
               {/* Right Column - Sidebar */}
               <div className="lg:col-span-4 space-y-6">
                 {/* Publish Settings */}
-<div className="bg-white rounded-2xl border border-[#e8edf5] p-6 shadow-sm  top-6">
+                <div className="bg-white rounded-2xl border border-[#e8edf5] p-6 shadow-sm  top-6">
 
-  {/* Header */}
-  <div className="flex items-center gap-3 mb-6">
-    <div
-      className="w-10 h-10 rounded-full flex items-center justify-center"
-      style={{ background: "#EAF8EE" }}
-    >
-      <CalendarDays
-        size={18}
-        strokeWidth={2}
-        style={{ color: "#4CAF72" }}
-      />
-    </div>
+                  {/* Header */}
+                  <div className="flex items-center gap-3 mb-6">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ background: "#EAF8EE" }}
+                    >
+                      <CalendarDays
+                        size={18}
+                        strokeWidth={2}
+                        style={{ color: "#4CAF72" }}
+                      />
+                    </div>
 
-    <h3
-      style={{
-        fontFamily: "'Playfair Display', serif",
-        fontSize: "28px",
-        fontWeight: 700,
-        color: "#1e3a8a",
-      }}
-    >
-      Publish Settings
-    </h3>
-  </div>
+                    <h3
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        fontSize: "28px",
+                        fontWeight: 700,
+                        color: "#1e3a8a",
+                      }}
+                    >
+                      Publish Settings
+                    </h3>
+                  </div>
 
-  <div className="space-y-6">
+                  <div className="space-y-6">
 
-    {/* Status */}
-    <div>
-      <label
-        className="block mb-2"
-        style={{
-          fontFamily: "'Inter', sans-serif",
-          fontWeight: 700,
-          fontSize: "15px",
-          color: "#243B63",
-        }}
-      >
-        Status
-      </label>
+                    {/* Status */}
+                    <div>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontWeight: 700,
+                          fontSize: "15px",
+                          color: "#243B63",
+                        }}
+                      >
+                        Status
+                      </label>
 
-      <select
-        name="status"
-        value={eventData.status}
-        onChange={handleChange}
-        className="w-full rounded-lg border border-[#e8edf5] px-3 py-2 bg-white outline-none"
-      >
-        <option>Published</option>
-        <option>Draft</option>
-        <option>Scheduled</option>
-      </select>
+                      <select
+                        name="status"
+                        value={eventData.status}
+                        onChange={handleChange}
+                        className="w-full rounded-lg border border-[#e8edf5] px-3 py-2 bg-white outline-none"
+                      >
+                        <option>Published</option>
+                        <option>Draft</option>
+                        <option>Scheduled</option>
+                      </select>
 
-      <p className="mt-2 text-xs text-[#8A97AE]">
-        Published events are visible to everyone.
-      </p>
-    </div>
+                      <p className="mt-2 text-xs text-[#8A97AE]">
+                        Published events are visible to everyone.
+                      </p>
+                    </div>
 
-    {/* Visibility */}
+                    {/* Visibility */}
 
-    <div>
-      <label
-        className="block mb-2"
-        style={{
-          fontFamily: "'Inter', sans-serif",
-          fontWeight: 700,
-          fontSize: "15px",
-          color: "#243B63",
-        }}
-      >
-        Visibility
-      </label>
+                    <div>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontWeight: 700,
+                          fontSize: "15px",
+                          color: "#243B63",
+                        }}
+                      >
+                        Visibility
+                      </label>
 
-      <select
-        name="visibility"
-        value={eventData.visibility}
-        onChange={handleChange}
-        className="w-full rounded-lg border border-[#e8edf5] px-3 py-2 bg-white outline-none"
-      >
-        <option>Public</option>
-        <option>Private</option>
-        <option>Members Only</option>
-      </select>
+                      <select
+                        name="visibility"
+                        value={eventData.visibility}
+                        onChange={handleChange}
+                        className="w-full rounded-lg border border-[#e8edf5] px-3 py-2 bg-white outline-none"
+                      >
+                        <option>Public</option>
+                        <option>Private</option>
+                        <option>Members Only</option>
+                      </select>
 
-      <p className="mt-2 text-xs text-[#8A97AE]">
-        Public events are shown on the website.
-      </p>
-    </div>
+                      <p className="mt-2 text-xs text-[#8A97AE]">
+                        Public events are shown on the website.
+                      </p>
+                    </div>
 
-    {/* Featured */}
+                    {/* Featured */}
 
-    <div className="flex items-center justify-between">
-      <div>
-        <p
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 700,
-            color: "#243B63",
-            fontSize: "15px",
-          }}
-        >
-          Featured Event
-        </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontWeight: 700,
+                            color: "#243B63",
+                            fontSize: "15px",
+                          }}
+                        >
+                          Featured Event
+                        </p>
 
-        <p className="text-xs text-[#8A97AE] mt-1">
-          Show this event in the featured section.
-        </p>
-      </div>
+                        <p className="text-xs text-[#8A97AE] mt-1">
+                          Show this event in the featured section.
+                        </p>
+                      </div>
 
-      <label className="relative inline-flex items-center cursor-pointer">
-        <input
-          type="checkbox"
-          name="featured"
-          checked={eventData.featured}
-          onChange={handleChange}
-          className="sr-only peer"
-        />
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="featured"
+                          checked={eventData.featured}
+                          onChange={handleChange}
+                          className="sr-only peer"
+                        />
 
-        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-[#34C759] after:content-[''] after:absolute after:left-[2px] after:top-[2px] after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
-      </label>
-    </div>
+                        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-[#34C759] after:content-[''] after:absolute after:left-[2px] after:top-[2px] after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                      </label>
+                    </div>
 
-    {/* Registration */}
+                    {/* Registration */}
 
-    <div className="flex items-center justify-between">
-      <div>
-        <p
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 700,
-            color: "#243B63",
-            fontSize: "15px",
-          }}
-        >
-          Allow Registration
-        </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontWeight: 700,
+                            color: "#243B63",
+                            fontSize: "15px",
+                          }}
+                        >
+                          Allow Registration
+                        </p>
 
-        <p className="text-xs text-[#8A97AE] mt-1">
-          Allow users to register for this event.
-        </p>
-      </div>
+                        <p className="text-xs text-[#8A97AE] mt-1">
+                          Allow users to register for this event.
+                        </p>
+                      </div>
 
-      <label className="relative inline-flex items-center cursor-pointer">
-        <input
-          type="checkbox"
-          name="allowRegistration"
-          checked={eventData.allowRegistration}
-          onChange={handleChange}
-          className="sr-only peer"
-        />
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="allowRegistration"
+                          checked={eventData.allowRegistration}
+                          onChange={handleChange}
+                          className="sr-only peer"
+                        />
 
-        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-[#34C759] after:content-[''] after:absolute after:left-[2px] after:top-[2px] after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
-      </label>
-    </div>
+                        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-[#34C759] after:content-[''] after:absolute after:left-[2px] after:top-[2px] after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                      </label>
+                    </div>
 
-    {/* Registration Link */}
+                    {/* Registration Link */}
 
-    <div>
-      <label
-        className="block mb-2"
-        style={{
-          fontFamily: "'Inter', sans-serif",
-          fontWeight: 700,
-          fontSize: "15px",
-          color: "#243B63",
-        }}
-      >
-        Registration Link (optional)
-      </label>
+                    <div>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontWeight: 700,
+                          fontSize: "15px",
+                          color: "#243B63",
+                        }}
+                      >
+                        Registration Link (optional)
+                      </label>
 
-      <input
-        name="registrationUrl"
-        value={eventData.registrationUrl}
-        onChange={handleChange}
-        placeholder="https://..."
-        className="w-full rounded-lg border border-[#e8edf5] px-3 py-2 outline-none"
-      />
+                      <input
+                        name="registrationUrl"
+                        value={eventData.registrationUrl}
+                        onChange={handleChange}
+                        placeholder="https://..."
+                        className="w-full rounded-lg border border-[#e8edf5] px-3 py-2 outline-none"
+                      />
 
-      <p className="mt-2 text-xs text-[#8A97AE]">
-        Link to registration page or form.
-      </p>
-    </div>
-  </div>
-</div>
+                      <p className="mt-2 text-xs text-[#8A97AE]">
+                        Link to registration page or form.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Tips */}
-<div className="bg-white rounded-2xl border border-[#e8edf5] p-6 shadow-sm">
-  {/* Heading */}
-  <div className="flex items-center gap-3 mb-5">
-    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFF8E8]">
-      <Lightbulb
-        size={18}
-        strokeWidth={2}
-        style={{ color: "#D4A017" }}
-      />
-    </div>
+                <div className="bg-white rounded-2xl border border-[#e8edf5] p-6 shadow-sm">
+                  {/* Heading */}
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFF8E8]">
+                      <Lightbulb
+                        size={18}
+                        strokeWidth={2}
+                        style={{ color: "#D4A017" }}
+                      />
+                    </div>
 
-    <h3
-      style={{
-        fontFamily: "'Playfair Display', serif",
-        fontSize: "22px",
-        fontWeight: 700,
-        color: "#1e3a8a",
-      }}
-    >
-      Tips
-    </h3>
-  </div>
+                    <h3
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        fontSize: "22px",
+                        fontWeight: 700,
+                        color: "#1e3a8a",
+                      }}
+                    >
+                      Tips
+                    </h3>
+                  </div>
 
-  {/* Tips */}
-  <ul className="space-y-4">
-    {[
-      "Use a clear and descriptive title",
-      "Add a short description for listing",
-      "Include all important details",
-      "Choose an engaging image",
-      "Review before publishing",
-    ].map((item, index) => (
-      <li key={index} className="flex items-center gap-3">
-        <Check
-          size={16}
-          strokeWidth={3}
-          style={{ color: "#4CAF72", flexShrink: 0 }}
-        />
+                  {/* Tips */}
+                  <ul className="space-y-4">
+                    {[
+                      "Use a clear and descriptive title",
+                      "Add a short description for listing",
+                      "Include all important details",
+                      "Choose an engaging image",
+                      "Review before publishing",
+                    ].map((item, index) => (
+                      <li key={index} className="flex items-center gap-3">
+                        <Check
+                          size={16}
+                          strokeWidth={3}
+                          style={{ color: "#4CAF72", flexShrink: 0 }}
+                        />
 
-        <span
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: "15px",
-            fontWeight: 500,
-            color: "#243B63",
-            lineHeight: "1.6",
-          }}
-        >
-          {item}
-        </span>
-      </li>
-    ))}
-  </ul>
-</div>
+                        <span
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: "15px",
+                            fontWeight: 500,
+                            color: "#243B63",
+                            lineHeight: "1.6",
+                          }}
+                        >
+                          {item}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
                 {/* Need Help */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">

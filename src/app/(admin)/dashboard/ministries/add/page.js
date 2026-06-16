@@ -28,6 +28,7 @@ const MinistryPage = () => {
     serviceArea: "",
     website: "",
     email: "",
+    leader: "",
     // Additional Information
     whatWeDo: "",
     whoWeServe: "",
@@ -41,6 +42,8 @@ const MinistryPage = () => {
   const [selectedServiceArea, setSelectedServiceArea] = useState("");
   const [charCount, setCharCount] = useState(0);
   const fileInputRef = useRef(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   // Mock data for selects
   const categories = [
@@ -142,7 +145,7 @@ const MinistryPage = () => {
   };
 
   // Handle form submission
-  const handleSubmit = (e, action) => {
+  const handleSubmit = async (e, action) => {
     e.preventDefault();
     
     // Validate required fields
@@ -159,12 +162,40 @@ const MinistryPage = () => {
       return;
     }
     
-    console.log(`${action}:`, formData);
-    alert(`Ministry profile ${action === "publish" ? "published" : "saved as draft"} successfully!`);
+    if (action === "publish") {
+      try {
+        setIsSubmitting(true);
+        const response = await fetch("/api/ministries", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setShowSuccessPopup(true);
+          setTimeout(() => setShowSuccessPopup(false), 3000);
+          handleCancel(false); // Reset the form after success
+        } else {
+          alert(`Error: ${data.message || "Failed to publish ministry"}`);
+        }
+      } catch (error) {
+        console.error("Submit error:", error);
+        alert("An error occurred while publishing the ministry.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      console.log(`${action}:`, formData);
+      alert(`Ministry profile saved as draft successfully!`);
+    }
   };
 
-  const handleCancel = () => {
-    if (window.confirm("Are you sure you want to cancel? All unsaved changes will be lost.")) {
+  const handleCancel = (showConfirm = true) => {
+    if (!showConfirm || window.confirm("Are you sure you want to cancel? All unsaved changes will be lost.")) {
       setFormData({
         ministryName: "",
         category: "",
@@ -175,6 +206,7 @@ const MinistryPage = () => {
         serviceArea: "",
         website: "",
         email: "",
+        leader: "",
         whatWeDo: "",
         whoWeServe: "",
         ministryLogo: null,
@@ -191,34 +223,50 @@ const MinistryPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
-  {
-    icon: Info,
-    label: "General Information",
-  },
-  {
-    icon: Users,
-    label: "Contacts",
-  },
-  {
-    icon: BriefcaseBusiness,
-    label: "Programs & Services",
-  },
-  {
-    icon: ImageIcon,
-    label: "Media",
-  },
-  {
-    icon: Globe,
-    label: "Social & Links",
-  },
-  {
-    icon: ClipboardCheck,
-    label: "Review",
-  },
-];
+    {
+      icon: Info,
+      label: "General Information",
+      id: "general-information",
+    },
+    {
+      icon: FileText,
+      label: "Details",
+      id: "details",
+    },
+    {
+      icon: ImageIcon,
+      label: "Media",
+      id: "media",
+    },
+    {
+      icon: Target,
+      label: "Additional Information",
+      id: "additional-information",
+    },
+    {
+      icon: ClipboardCheck,
+      label: "Review & Publish",
+      id: "review-publish",
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white relative">
+      {/* Animated Success Popup */}
+      <div 
+        className={`fixed top-6 right-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 transition-all duration-500 z-50 ${
+          showSuccessPopup ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none"
+        }`}
+      >
+        <div className="bg-emerald-100 p-1.5 rounded-full">
+          <CheckCircle className="w-5 h-5 text-emerald-600" />
+        </div>
+        <div>
+          <h4 className="font-semibold text-emerald-900">Successfully Added</h4>
+          <p className="text-sm text-emerald-700">The ministry has been published.</p>
+        </div>
+      </div>
+
       <main className="flex-1">
         <div className="p-8 max-w-[1400px] mx-auto">
           {/* Header */}
@@ -242,7 +290,13 @@ const MinistryPage = () => {
       <button
         key={index}
         type="button"
-        onClick={() => setCurrentStep(index)}
+        onClick={() => {
+          setCurrentStep(index);
+          const element = document.getElementById(step.id);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }}
         className="relative flex-1 h-full flex items-center justify-center gap-2 transition-all hover:bg-gray-50"
       >
         {isActive && (
@@ -283,7 +337,7 @@ const MinistryPage = () => {
               {/* Left Column */}
               <div className="lg:col-span-8 space-y-8">
                 {/* 1. Basic Information */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <div id="general-information" className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm scroll-mt-24">
                   <div className="flex items-center gap-3 mb-5">
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center"
@@ -416,7 +470,7 @@ const MinistryPage = () => {
                 </div>
 
                 {/* 2. Ministry Details */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <div id="details" className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm scroll-mt-24">
                   <div className="flex items-center gap-3 mb-5">
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center"
@@ -480,6 +534,18 @@ const MinistryPage = () => {
                       </select>
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Ministry Leader </label>
+                      <input
+                        type="text"
+                        name="leader"
+                        value={formData.leader}
+                        onChange={handleChange}
+                        placeholder="Leader name"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1">Website (optional)</label>
@@ -510,7 +576,7 @@ const MinistryPage = () => {
 
 
                 {/* 4. Ministry Logo */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <div id="media" className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm scroll-mt-24">
                   <div className="flex items-center gap-3 mb-5">
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center"
@@ -576,7 +642,7 @@ const MinistryPage = () => {
                 </div>
 
                                 {/* 3. Additional Information */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <div id="additional-information" className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm scroll-mt-24">
                   <div className="flex items-center gap-3 mb-5">
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center"
@@ -625,7 +691,7 @@ const MinistryPage = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-2 pb-8">
+                <div id="review-publish" className="flex justify-end gap-3 pt-2 pb-8 scroll-mt-24">
                   <button
                     type="button"
                     onClick={handleCancel}
@@ -642,9 +708,10 @@ const MinistryPage = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 transition shadow-sm"
+                    disabled={isSubmitting}
+                    className="px-6 py-2.5 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 transition shadow-sm disabled:bg-blue-400"
                   >
-                    Publish Ministry
+                    {isSubmitting ? "Publishing..." : "Publish Ministry"}
                   </button>
                 </div>
               </div>

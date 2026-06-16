@@ -128,14 +128,20 @@ export default function Ministries() {
         return { x: position > 0 ? 1000 : -1000, scale: 1, z: 0, opacity: 0, rotateY: 0, zIndex: 10 };
       }
 
-      return { 
-        x: position * offset, 
-        scale: 1, 
-        z: 0, 
-        opacity: 1, 
-        rotateY: 0, 
-        zIndex: 50 - Math.abs(position) 
-      };
+const filteredMode = activeFilter !== "All";
+
+return {
+  x: position * offset,
+  scale: 1,
+  z: 0,
+  opacity: filteredMode
+    ? index === currentIndex
+      ? 1
+      : 0
+    : 1,
+  rotateY: 0,
+  zIndex: 50 - Math.abs(position),
+};
     };
 
     const isHighlighted = (index) => {
@@ -168,8 +174,17 @@ export default function Ministries() {
                   opacity: style.opacity,
                   rotateY: style.rotateY,
                 }}
-                transition={{ type: "spring", stiffness: 150, damping: 60 }}
-                className="absolute w-[260px]"
+            transition={{
+              x: {
+                type: "spring",
+                stiffness: 150,
+                damping: 60,
+              },
+              opacity: {
+                duration: 0.7,
+                ease: "easeInOut",
+              },
+            }}                className="absolute w-[260px]"
                 style={{ transformStyle: "preserve-3d", zIndex: highlighted ? 60 : style.zIndex }}
               >
             <div

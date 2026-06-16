@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Plus, 
@@ -26,7 +26,8 @@ import {
   Building2,
   User,
   TrendingUp,
-  ArrowRight
+  ArrowRight,
+  Trash2
 } from 'lucide-react';
 import { GiDove } from "react-icons/gi";
 
@@ -36,15 +37,92 @@ export default function MinistriesPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
     const [selectedStatus, setSelectedStatus] = useState('All Status');
+    const [ministries, setMinistries] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [itemToDelete, setItemToDelete] = useState(null);
 
-    const ministries = [
-        { id: 1, name: "A Baby's Breath", category: "Pro-Life", leader: "George Smith", location: "Philadelphia, PA", events: 5, status: "Active", icon: <Heart size={24} />, iconBg: "bg-rose-100", iconColor: "text-rose-600" },
-        { id: 2, name: "House of God's Light", category: "Evangelization", leader: "Michael Thomas", location: "Norristown, PA", events: 4, status: "Active", icon: <Megaphone size={24} />, iconBg: "bg-amber-100", iconColor: "text-amber-600" },
-        { id: 3, name: "Life Runners", category: "Pro-Life", leader: "John Martin", location: "Pennsylvania", events: 8, status: "Pending", icon: <Heart size={24} />, iconBg: "bg-rose-100", iconColor: "text-rose-600" },
-        { id: 4, name: "Gianna Center", category: "Family", leader: "Sarah Williams", location: "Philadelphia, PA", events: 6, status: "Active", icon: <Users size={24} />, iconBg: "bg-emerald-100", iconColor: "text-emerald-600" },
-        { id: 5, name: "Militia of Immaculata", category: "Men", leader: "David Miller", location: "Malvern, PA", events: 3, status: "Active", icon: <ShieldCheck size={24} />, iconBg: "bg-indigo-100", iconColor: "text-indigo-600" },
-        { id: 6, name: "Society of St. Vincent", category: "Mission", leader: "Robert Brown", location: "Philadelphia, PA", events: 7, status: "Active", icon: <HandHeart size={24} />, iconBg: "bg-teal-100", iconColor: "text-teal-600" },
-    ];
+    const getCategoryIcon = (category, size = 14) => {
+        if (!category) return <Church size={size} />;
+        const cat = category.toLowerCase();
+        if (cat.includes('pro-life')) return <Heart size={size} />;
+        if (cat.includes('youth') || cat.includes('children')) return <GiDove size={size} />;
+        if (cat.includes('family') || cat.includes('marriage')) return <Users size={size} />;
+        if (cat.includes('evangel') || cat.includes('outreach')) return <Megaphone size={size} />;
+        if (cat.includes('men')) return <ShieldCheck size={size} />;
+        if (cat.includes('mission')) return <Church size={size} />;
+        if (cat.includes('prayer')) return <HandHeart size={size} />;
+        if (cat.includes('care') || cat.includes('counseling')) return <Heart size={size} />;
+        return <Church size={size} />;
+    };
+
+    const handleDelete = (id) => {
+        setItemToDelete(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!itemToDelete) return;
+        try {
+            const res = await fetch(`/api/ministries/${itemToDelete}`, { method: 'DELETE' });
+            if (res.ok) {
+                setMinistries(prev => prev.filter(m => m.id !== itemToDelete));
+                setItemToDelete(null);
+            } else {
+                alert("Failed to delete ministry");
+            }
+        } catch (err) {
+            console.error("Error deleting ministry", err);
+            alert("An error occurred while deleting the ministry");
+        }
+    };
+
+    useEffect(() => {
+        const fetchMinistries = async () => {
+            try {
+                const res = await fetch('/api/ministries');
+                const data = await res.json();
+                if (data.success) {
+                    const mappedMinistries = data.ministries.map(m => {
+                        const styleMap = {
+                            'Pro-Life': { bg: 'bg-rose-100', text: 'text-rose-600' },
+                            'Youth': { bg: 'bg-sky-100', text: 'text-sky-600' },
+                            'Family': { bg: 'bg-emerald-100', text: 'text-emerald-600' },
+                            'Evangelization': { bg: 'bg-amber-100', text: 'text-amber-600' },
+                            'Men': { bg: 'bg-indigo-100', text: 'text-indigo-600' },
+                            'Women': { bg: 'bg-fuchsia-100', text: 'text-fuchsia-600' },
+                            'Mission': { bg: 'bg-teal-100', text: 'text-teal-600' },
+                            'Children': { bg: 'bg-yellow-100', text: 'text-yellow-600' },
+                            'Prayer': { bg: 'bg-purple-100', text: 'text-purple-600' },
+                            'Music': { bg: 'bg-pink-100', text: 'text-pink-600' },
+                            'Default': { bg: 'bg-slate-100', text: 'text-slate-600' }
+                        };
+                        
+                        const styleKey = Object.keys(styleMap).find(key => m.category.includes(key)) || 'Default';
+                        const style = styleMap[styleKey];
+
+                        return {
+                            id: m._id,
+                            name: m.name,
+                            category: m.category,
+                            leader: m.leader || 'Unassigned',
+                            location: m.primaryLocation || 'Not specified',
+                            events: m.events || 0,
+                            status: m.status || 'Active',
+                            iconBg: style.bg,
+                            iconColor: style.text,
+                            icon: getCategoryIcon(m.category, 24)
+                        };
+                    });
+                    setMinistries(mappedMinistries);
+                }
+            } catch (error) {
+                console.error("Error fetching ministries:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchMinistries();
+    }, []);
 
     const getStatusColor = (status) => {
         return status === 'Active' 
@@ -52,17 +130,13 @@ export default function MinistriesPage() {
             : 'bg-amber-100 text-amber-700 border-amber-200';
     };
 
-    const getCategoryIcon = (category) => {
-        const icons = {
-            'Pro-Life': <Heart size={14} />,
-            'Youth': <GiDove size={14} />,
-            'Family': <Users size={14} />,
-            'Evangelization': <Megaphone size={14} />,
-            'Men': <ShieldCheck size={14} />,
-            'Mission': <Church size={14} />,
-        };
-        return icons[category] || <Cross size={14} />;
-    };
+    const filteredMinistries = ministries.filter(m => {
+        const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              m.location.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = selectedCategory === 'All Categories' || m.category.includes(selectedCategory);
+        const matchesStatus = selectedStatus === 'All Status' || m.status === selectedStatus;
+        return matchesSearch && matchesCategory && matchesStatus;
+    });
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -244,7 +318,15 @@ export default function MinistriesPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {ministries.map((ministry, index) => (
+                                    {isLoading ? (
+                                        <tr>
+                                            <td colSpan="6" className="text-center py-8 text-slate-500">Loading ministries...</td>
+                                        </tr>
+                                    ) : filteredMinistries.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="text-center py-8 text-slate-500">No ministries found matching your criteria.</td>
+                                        </tr>
+                                    ) : filteredMinistries.map((ministry, index) => (
                                         <tr key={ministry.id} className={`border-t border-slate-100 hover:bg-slate-50/80 transition-colors group ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
@@ -261,7 +343,7 @@ export default function MinistriesPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-                                                    {getCategoryIcon(ministry.category)}
+                                                    {getCategoryIcon(ministry.category, 14)}
                                                     {ministry.category}
                                                 </span>
                                             </td>
@@ -291,6 +373,12 @@ export default function MinistriesPage() {
                                                     <button className="bg-[#082B63] hover:bg-[#0B3578] transition-all text-white px-3 py-1.5 rounded-lg font-medium text-sm flex items-center gap-1 shadow-sm">
                                                         <Edit size={14} /> Edit
                                                     </button>
+                                                    <button 
+                                                        onClick={() => handleDelete(ministry.id)}
+                                                        className="border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all font-medium text-sm flex items-center gap-1"
+                                                    >
+                                                        <Trash2 size={14} /> 
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -300,7 +388,11 @@ export default function MinistriesPage() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-                            {ministries.map((ministry) => (
+                            {isLoading ? (
+                                <div className="col-span-full text-center py-8 text-slate-500">Loading ministries...</div>
+                            ) : filteredMinistries.length === 0 ? (
+                                <div className="col-span-full text-center py-8 text-slate-500">No ministries found matching your criteria.</div>
+                            ) : filteredMinistries.map((ministry) => (
                                 <div key={ministry.id} className="group bg-white border border-slate-200 rounded-xl p-5 hover:shadow-xl hover:border-[#D6A646]/30 transition-all duration-300">
                                     <div className="flex items-start justify-between mb-4">
                                         <div className={`w-14 h-14 rounded-2xl ${ministry.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
@@ -317,7 +409,7 @@ export default function MinistriesPage() {
                                     </p>
                                     <div className="flex flex-wrap gap-2 mb-4">
                                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">
-                                            {getCategoryIcon(ministry.category)}
+                                            {getCategoryIcon(ministry.category, 14)}
                                             {ministry.category}
                                         </span>
                                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">
@@ -329,9 +421,18 @@ export default function MinistriesPage() {
                                             <User size={14} className="text-slate-400" />
                                             <span className="text-sm text-slate-600">{ministry.leader}</span>
                                         </div>
-                                        <button className="text-[#082B63] font-semibold text-sm hover:gap-2 transition-all inline-flex items-center gap-1 group-hover:gap-2">
-                                            View Details <ArrowRight size={14} />
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => handleDelete(ministry.id)}
+                                                className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                                title="Delete Ministry"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                            <button className="text-[#082B63] font-semibold text-sm hover:gap-2 transition-all inline-flex items-center gap-1 group-hover:gap-2">
+                                                View Details <ArrowRight size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -340,7 +441,7 @@ export default function MinistriesPage() {
 
                     {/* Pagination */}
                     <div className="px-6 py-5 border-t border-slate-100 flex justify-between items-center bg-slate-50/30">
-                        <p className="text-sm text-slate-500 font-medium">Showing 1-{ministries.length} of {ministries.length} ministries</p>
+                        <p className="text-sm text-slate-500 font-medium">Showing 1-{filteredMinistries.length} of {filteredMinistries.length} ministries</p>
                         <div className="flex gap-2">
                             <button className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1">
                                 <ChevronLeft size={16} /> Previous
@@ -355,6 +456,35 @@ export default function MinistriesPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {itemToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4 border border-slate-200">
+                        <div className="flex items-center gap-3 mb-4 text-red-600">
+                            <div className="bg-red-100 p-2 rounded-full">
+                                <Trash2 size={24} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900">Confirm Deletion</h3>
+                        </div>
+                        <p className="text-slate-600 mb-6">Are you sure you want to delete this ministry? This action cannot be undone.</p>
+                        <div className="flex gap-3 justify-end">
+                            <button 
+                                onClick={() => setItemToDelete(null)}
+                                className="px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={confirmDelete}
+                                className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-xl font-semibold transition-colors"
+                            >
+                                Yes, Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
