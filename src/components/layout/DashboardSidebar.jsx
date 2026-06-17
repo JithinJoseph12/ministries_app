@@ -15,6 +15,7 @@ import {
     LogOut,
     ChevronDown,
     ChevronRight,
+    FolderLock,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -40,16 +41,24 @@ const navItems = [
             { label: "Add Event", href: "/dashboard/events/add" },
         ]
     },
+    { icon: Folder, label: "Public Resources", href: "/dashboard/resources" },
+    { icon: FolderLock, label: "Resource Center",
+         href: "/dashboard/resources",
+                subItems: [
+            { label: "Leader Directory", href: "/dashboard/internal-resources/leader-directory" },
+            { label: "Shared Resources", href: "/dashboard/internal-resources/shared-resources" },
+            { label: "Internal Communications", href: "/dashboard/internal-resources/internal-communications" },
+            { label: "Spiritual Library", href: "/dashboard/internal-resources/spiritual-library" },
+        ] },
     { icon: Users, label: "Contacts", href: "/dashboard/contacts" },
-    { icon: Folder, label: "Resources", href: "/dashboard/resources" },
     { icon: BookOpen, label: "Blog", href: "/dashboard/blog" },
 ];
 
-const bottomNavItems = [
-    { icon: UserCog, label: "Users" },
-    { icon: Settings, label: "Settings" },
-    { icon: HelpCircle, label: "Help & Support" },
-];
+// const bottomNavItems = [
+//     { icon: UserCog, label: "Users" },
+//     { icon: Settings, label: "Settings" },
+//     { icon: HelpCircle, label: "Help & Support" },
+// ];
 
 export default function DashboardSidebar() {
     const pathname = usePathname();

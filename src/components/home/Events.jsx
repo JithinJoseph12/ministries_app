@@ -53,20 +53,20 @@ export default function Events() {
 
   // Calendar data for May 2026
   const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-  
+
   // May 2026 starts on Friday (5/1/2026 is a Friday)
   // Let's build the calendar dates
   const getCalendarDates = () => {
     const dates = [];
     const firstDayOfMonth = new Date(2026, 4, 1); // May is month 4 (0-indexed)
     const startingDayOfWeek = firstDayOfMonth.getDay(); // 5 = Friday
-    
+
     // Previous month days to fill start
     const daysInPrevMonth = new Date(2026, 4, 0).getDate();
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
       dates.push({ day: daysInPrevMonth - i, currentMonth: false, events: [] });
     }
-    
+
     // Current month days
     const daysInMonth = new Date(2026, 5, 0).getDate();
     for (let i = 1; i <= daysInMonth; i++) {
@@ -80,16 +80,16 @@ export default function Events() {
       if (i === 20) events.push({ name: "Catholic Scripture Study", type: "blue" });
       if (i === 22) events.push({ name: "College Bible Study", type: "green" });
       if (i === 27) events.push({ name: "Healing Mass", type: "purple" });
-      
+
       dates.push({ day: i, currentMonth: true, events });
     }
-    
+
     // Next month days to fill end (42 total - 6 rows of 7)
     const remaining = 42 - dates.length;
     for (let i = 1; i <= remaining; i++) {
       dates.push({ day: i, currentMonth: false, events: [] });
     }
-    
+
     return dates;
   };
 
@@ -105,7 +105,7 @@ export default function Events() {
   return (
     <section id='events' className="container mx-auto w-[95%] max-w-[1450px] mt-[35px]">
       <div className="bg-white rounded-[24px] p-[38px] shadow-[0_8px_25px_rgba(0,0,0,0.04)]">
-        
+
         {/* Section Header */}
         <div className="flex flex-wrap justify-between items-center mb-[30px]">
           <div>
@@ -123,7 +123,7 @@ export default function Events() {
 
         {/* Events Layout - Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-[390px_1fr] gap-[28px]">
-          
+
           {/* Events List */}
           <div className="flex flex-col gap-[18px]">
             {eventList.map((event) => (
@@ -154,8 +154,8 @@ export default function Events() {
             <div className="p-[20px] bg-[#f7f9fd] flex justify-between items-center font-semibold text-[#11295c]">
               <div>May 2026</div>
               <div className="flex gap-2">
-                <span className="cursor-pointer">Month</span> | 
-                <span className="cursor-pointer">Week</span> | 
+                <span className="cursor-pointer">Month</span> |
+                <span className="cursor-pointer">Week</span> |
                 <span className="cursor-pointer">List</span>
               </div>
             </div>
@@ -176,9 +176,8 @@ export default function Events() {
               {calendarDates.map((date, idx) => (
                 <div
                   key={idx}
-                  className={`border border-[#edf1f7] p-[12px] text-[13px] min-h-[120px] align-top ${
-                    !date.currentMonth ? "text-gray-400" : "text-[#11295c]"
-                  }`}
+                  className={`border border-[#edf1f7] p-[12px] text-[13px] min-h-[120px] align-top ${!date.currentMonth ? "text-gray-400" : "text-[#11295c]"
+                    }`}
                 >
                   <span className="font-medium">{date.day}</span>
                   {date.events.map((event, eventIdx) => (
