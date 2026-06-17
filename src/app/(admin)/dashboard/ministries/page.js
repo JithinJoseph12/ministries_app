@@ -138,6 +138,12 @@ export default function MinistriesPage() {
         return matchesSearch && matchesCategory && matchesStatus;
     });
 
+    const totalMinistries = ministries.length;
+    const activeMinistries = ministries.filter(m => m.status === 'Active').length;
+    const pendingMinistries = ministries.filter(m => m.status === 'Pending').length;
+    const uniqueCategories = new Set(ministries.map(m => m.category)).size;
+    const activePercentage = totalMinistries > 0 ? Math.round((activeMinistries / totalMinistries) * 100) : 0;
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
             <div className="p-8 lg:p-10">
@@ -172,7 +178,7 @@ export default function MinistriesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-slate-500 text-sm font-medium">Total Ministries</p>
-                                <h3 className="text-4xl font-bold mt-2 text-slate-900">20</h3>
+                                <h3 className="text-4xl font-bold mt-2 text-slate-900">{totalMinistries}</h3>
                                 <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
                                     <TrendingUp size={12} /> +12% this year
                                 </p>
@@ -187,8 +193,8 @@ export default function MinistriesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-slate-500 text-sm font-medium">Active</p>
-                                <h3 className="text-4xl font-bold mt-2 text-emerald-600">18</h3>
-                                <p className="text-xs text-slate-500 mt-2">90% of total</p>
+                                <h3 className="text-4xl font-bold mt-2 text-emerald-600">{activeMinistries}</h3>
+                                <p className="text-xs text-slate-500 mt-2">{activePercentage}% of total</p>
                             </div>
                             <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <CheckCircle size={28} className="text-emerald-600" />
@@ -200,7 +206,7 @@ export default function MinistriesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-slate-500 text-sm font-medium">Pending</p>
-                                <h3 className="text-4xl font-bold mt-2 text-amber-600">2</h3>
+                                <h3 className="text-4xl font-bold mt-2 text-amber-600">{pendingMinistries}</h3>
                                 <p className="text-xs text-slate-500 mt-2">Awaiting review</p>
                             </div>
                             <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -213,7 +219,7 @@ export default function MinistriesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-slate-500 text-sm font-medium">Categories</p>
-                                <h3 className="text-4xl font-bold mt-2 text-slate-900">8</h3>
+                                <h3 className="text-4xl font-bold mt-2 text-slate-900">{uniqueCategories}</h3>
                                 <p className="text-xs text-slate-500 mt-2">Across all ministries</p>
                             </div>
                             <div className="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">

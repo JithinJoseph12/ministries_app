@@ -233,7 +233,7 @@ return {
               Catholic Ministries Working Together
             </h2>
           </div>
-          <a href="#" className="font-semibold text-[#0a4cdf] hover:underline">
+          <a href="/ministries" className="font-semibold text-[#0a4cdf] hover:underline">
             View All Ministries →
           </a>
         </div>

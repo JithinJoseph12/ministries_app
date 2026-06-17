@@ -44,7 +44,7 @@ export default function Involve() {
   return (
     <section id="get-involved" className="container mx-auto w-[95%] max-w-[1450px] mt-[35px]">
       <div className="bg-white rounded-[20px] p-[25px_30px] border border-[#e9edf5]">
-        
+
         {/* Section Mini Title */}
         <div className="text-center text-[12px] font-bold tracking-[0.5px] text-[#173783] mb-[25px]">
           HOW WOULD YOU LIKE TO GET INVOLVED?
@@ -55,20 +55,18 @@ export default function Involve() {
           {involveOptions.map((option, index) => (
             <div
               key={option.id}
-              className={`text-center p-[20px_15px] ${
-                index !== involveOptions.length - 1 ? 'border-r border-[#edf1f7]' : ''
-              }`}
+              className={`text-center p-[20px_15px] ${index !== involveOptions.length - 1 ? 'border-r border-[#edf1f7]' : ''
+                }`}
             >
               {/* Icon */}
-              <div className={`w-[58px] h-[58px] mx-auto border border-[#e6ebf5] rounded-full flex items-center justify-center text-[24px] bg-white mb-[16px] ${
-                option.isHeart ? 'text-[#ff4b57]' : 'text-[#173783]'
-              }`}>
+              <div className={`w-[58px] h-[58px] mx-auto border border-[#e6ebf5] rounded-full flex items-center justify-center text-[24px] bg-white mb-[16px] ${option.isHeart ? 'text-[#ff4b57]' : 'text-[#173783]'
+                }`}>
                 {option.icon}
               </div>
-              
+
               {/* Title */}
               <h4 className="text-[16px] font-bold text-[#11295c] mb-[10px]">{option.title}</h4>
-              
+
               {/* Description */}
               <p className="text-[12px] leading-[1.7] text-[#697899] whitespace-pre-line">
                 {option.description}

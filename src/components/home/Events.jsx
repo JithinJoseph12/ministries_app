@@ -116,7 +116,7 @@ export default function Events() {
               May 2026
             </h2>
           </div>
-          <a href="#" className="font-semibold text-[#0a4cdf] hover:underline">
+          <a href="/events" className="font-semibold text-[#0a4cdf] hover:underline">
             View All Events →
           </a>
         </div>

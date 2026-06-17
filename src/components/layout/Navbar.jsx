@@ -11,9 +11,9 @@ export default function Navbar() {
     { name: "Home", href: "/" },
     { name: "Ministries", href: "/ministries" },
     { name: "Events", href: "/events" },
-    { name: "Resources", href: "/#resources" },
-    { name: "About", href: "/#about" },
-    { name: "Get Involved", href: "/#get-involved" },
+    { name: "Resources", href: "/resources" },
+    { name: "About", href: "/about" },
+    { name: "Get Involved", href: "/involved" },
   ];
 
   const router = useRouter();
