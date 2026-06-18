@@ -341,7 +341,7 @@ export default function LeaderDirectory() {
 <div className="grid grid-cols-4 gap-4 mb-5">
 
   {/* Total Leaders */}
-  <div className="bg-white border border-[#E8EDF5] rounded-xl h-[92px] px-5 flex items-center gap-4">
+  <div className="bg-white border border-[#E8EDF5] rounded-xl h-[92px] px-5 flex items-center gap-4 shadow-sm hover:shadow-lg">
     <div className="w-12 h-12 rounded-full bg-[#EEF4FF] flex items-center justify-center shrink-0">
       <Users size={24} strokeWidth={2} className="text-[#2453D4]" />
     </div>
@@ -357,7 +357,7 @@ export default function LeaderDirectory() {
   </div>
 
   {/* Ministries */}
-  <div className="bg-white border border-[#E8EDF5] rounded-xl h-[92px] px-5 flex items-center gap-4">
+  <div className="bg-white border border-[#E8EDF5] rounded-xl h-[92px] px-5 flex items-center gap-4 shadow-sm hover:shadow-lg">
     <div className="w-12 h-12 rounded-full bg-[#EDF9F1] flex items-center justify-center shrink-0">
       <Building2 size={24} strokeWidth={2} className="text-[#23914D]" />
     </div>
@@ -373,7 +373,7 @@ export default function LeaderDirectory() {
   </div>
 
   {/* Coordinators */}
-  <div className="bg-white border border-[#E8EDF5] rounded-xl h-[92px] px-5 flex items-center gap-4">
+  <div className="bg-white border border-[#E8EDF5] rounded-xl h-[92px] px-5 flex items-center gap-4 shadow-sm hover:shadow-lg">
     <div className="w-12 h-12 rounded-full bg-[#F5F0FF] flex items-center justify-center shrink-0">
       <UserCog size={24} strokeWidth={2} className="text-[#7C3AED]" />
     </div>
@@ -389,7 +389,7 @@ export default function LeaderDirectory() {
   </div>
 
   {/* Administrators */}
-  <div className="bg-white border border-[#E8EDF5] rounded-xl h-[92px] px-5 flex items-center gap-4">
+  <div className="bg-white border border-[#E8EDF5] rounded-xl h-[92px] px-5 flex items-center gap-4 shadow-sm hover:shadow-lg">
     <div className="w-12 h-12 rounded-full bg-[#FFF6EB] flex items-center justify-center shrink-0">
       <ShieldCheck size={24} strokeWidth={2} className="text-[#F59E0B]" />
     </div>

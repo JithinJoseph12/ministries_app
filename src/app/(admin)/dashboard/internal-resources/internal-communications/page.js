@@ -13,6 +13,7 @@
 
 // app/internal-communication/page.js
 "use client";
+import { useState } from "react";
 import {
   Lock,
   Plus,
@@ -121,8 +122,45 @@ const categories = [
 ];
 
 export default function InternalCommunications() {
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [content, setContent] = useState("");
+  const [visibility, setVisibility] = useState("leaders");
+  const [publishNow, setPublishNow] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const handlePublish = () => {
+    setTitle("");
+    setCategory("");
+    setContent("");
+    setVisibility("leaders");
+    setPublishNow(true);
+    setShowSuccessModal(true);
+    setTimeout(() => setShowSuccessModal(false), 3000);
+  };
+
   return (
-    <div className="min-h-screen bg-[#FDFDFD] px-6 py-8 text-slate-900">
+    <div className="min-h-screen bg-[#FDFDFD] px-6 py-8 text-slate-900 relative">
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="flex w-[400px] flex-col items-center rounded-xl bg-white p-8 text-center shadow-2xl">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="mb-2 text-xl font-bold text-slate-800">Published Successfully</h2>
+            <p className="mb-6 text-sm text-slate-500">Your article has been published and is now live.</p>
+            <button 
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto ">
         {/* Header */}
         <header className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b pb-6 border-slate-200">
@@ -219,6 +257,8 @@ export default function InternalCommunications() {
                 <div>
                   <label className="mb-1.5 block text-sm font-medium">Title <span className="text-rose-500">*</span></label>
                   <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     placeholder="Enter article title"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                   />
@@ -226,9 +266,19 @@ export default function InternalCommunications() {
 
                 <div>
                   <label className="mb-1.5 block text-sm font-medium">Category <span className="text-rose-500">*</span></label>
-                  <button className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-400 hover:bg-slate-50">
-                    Select category <ChevronDown className="size-4" />
-                  </button>
+                  <div className="relative">
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    >
+                      <option value="" disabled className="text-slate-400">Select category</option>
+                      {categories.map((c) => (
+                        <option key={c.label} value={c.label}>{c.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                  </div>
                 </div>
 
                 <div>
@@ -247,6 +297,8 @@ export default function InternalCommunications() {
                       <button className="rounded p-1.5 hover:bg-slate-200"><LinkIcon className="size-3.5" /></button>
                     </div>
                     <textarea
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
                       rows={6}
                       placeholder="Write your content here..."
                       className="w-full resize-none px-3 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none"
@@ -268,11 +320,23 @@ export default function InternalCommunications() {
                   <label className="mb-2 block text-sm font-medium">Visibility</label>
                   <div className="flex items-center gap-5 text-sm">
                     <label className="flex items-center gap-2">
-                      <input type="radio" name="vis" defaultChecked className="size-4 accent-indigo-600" />
+                      <input 
+                        type="radio" 
+                        name="vis" 
+                        checked={visibility === "leaders"}
+                        onChange={() => setVisibility("leaders")}
+                        className="size-4 accent-indigo-600" 
+                      />
                       Leaders Only
                     </label>
                     <label className="flex items-center gap-2">
-                      <input type="radio" name="vis" className="size-4 accent-indigo-600" />
+                      <input 
+                        type="radio" 
+                        name="vis" 
+                        checked={visibility === "heads"}
+                        onChange={() => setVisibility("heads")}
+                        className="size-4 accent-indigo-600" 
+                      />
                       Ministry Heads Only
                     </label>
                   </div>
@@ -280,8 +344,17 @@ export default function InternalCommunications() {
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Publish Now</span>
-                  <button className="relative h-6 w-11 rounded-full bg-indigo-600">
-                    <span className="absolute right-0.5 top-0.5 size-5 rounded-full bg-white shadow" />
+                  <button 
+                    onClick={() => setPublishNow(!publishNow)}
+                    className={`relative h-6 w-11 rounded-full transition-colors ${
+                      publishNow ? "bg-indigo-600" : "bg-slate-300"
+                    }`}
+                  >
+                    <span 
+                      className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-transform ${
+                        publishNow ? "right-0.5" : "left-0.5"
+                      }`} 
+                    />
                   </button>
                 </div>
 
@@ -289,7 +362,10 @@ export default function InternalCommunications() {
                   <button className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-medium hover:bg-slate-50">
                     Save Draft
                   </button>
-                  <button className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">
+                  <button 
+                    onClick={handlePublish}
+                    className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+                  >
                     Publish Article
                   </button>
                 </div>

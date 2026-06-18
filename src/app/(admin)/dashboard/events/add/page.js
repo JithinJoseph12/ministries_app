@@ -2,6 +2,7 @@
 
 import { AlignCenter, AlignLeft, AlignRight, Bold, CalendarClock, CalendarDays, Check, ChevronDown, FileText, ImagePlus, Italic, Lightbulb, List, ListOrdered, MapPin, Redo2, Underline, Undo2 } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AddEventPage() {
   const [eventData, setEventData] = useState({
@@ -36,6 +37,7 @@ export default function AddEventPage() {
   const [charCount, setCharCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+const router = useRouter();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -73,8 +75,10 @@ export default function AddEventPage() {
 
         if (response.ok) {
           setShowSuccessPopup(true);
-          setTimeout(() => setShowSuccessPopup(false), 3000);
-
+          setTimeout(() => {
+            setShowSuccessPopup(false);
+            router.push("/dashboard/events");
+          }, 1500);
           // Optionally reset form:
           // setEventData({ ...initialState });
         } else {

@@ -169,11 +169,25 @@ function Field({ label, required, children }) {
   );
 }
 
-function Select({ placeholder }) {
+function Select({ placeholder, value, onChange, options = [] }) {
   return (
-    <button className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-400 hover:border-slate-300">
-      {placeholder} <ChevronDown className="h-4 w-4" />
-    </button>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={onChange}
+        className="w-full appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 focus:border-blue-400 focus:outline-none"
+      >
+        <option value="" disabled>
+          {placeholder}
+        </option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+    </div>
   );
 }
 
@@ -217,9 +231,26 @@ function Toggle({ label, checked, onChange }) {
 }
 
 export default function ResourcesPage() {
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [folder, setFolder] = useState("");
   const [visibility, setVisibility] = useState("leaders");
+  const [description, setDescription] = useState("");
   const [allowDownload, setAllowDownload] = useState(true);
   const [pinTop, setPinTop] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const handleUpload = () => {
+    setTitle("");
+    setCategory("");
+    setFolder("");
+    setVisibility("leaders");
+    setDescription("");
+    setAllowDownload(true);
+    setPinTop(false);
+    setShowSuccessModal(true);
+    setTimeout(() => setShowSuccessModal(false), 3000);
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
@@ -246,8 +277,28 @@ export default function ResourcesPage() {
 
   return (
     <div
-      className="min-h-screen bg-[#FDFDFD] p-6 text-slate-800"
+      className="min-h-screen bg-[#FDFDFD] p-6 text-slate-800 relative"
     >
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="flex w-[400px] flex-col items-center rounded-xl bg-white p-8 text-center shadow-2xl">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="mb-2 text-xl font-bold text-slate-800">Uploaded Successfully</h2>
+            <p className="mb-6 text-sm text-slate-500">Your resource has been uploaded and is now available.</p>
+            <button 
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto flex  gap-5">
         {/* MAIN */}
         <div className="flex-1 space-y-5 items-center">
@@ -305,7 +356,7 @@ export default function ResourcesPage() {
             ].map((s, i) => (
               <div
                 key={i}
-                className="flex items-center gap-4 rounded-xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+                className="flex items-center gap-4 rounded-xl border border-slate-200/70 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-lg"
               >
                 <div
                   className={`flex h-12 w-12 items-center justify-center rounded-xl ${s.bg} ${s.fg}`}
@@ -508,15 +559,27 @@ export default function ResourcesPage() {
           <div className="space-y-4">
             <Field label="Resource Title" required>
               <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter resource title"
                 className="w-full rounded-md border border-slate-200 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-blue-400 focus:outline-none"
               />
             </Field>
             <Field label="Category" required>
-              <Select placeholder="Select category" />
+              <Select 
+                placeholder="Select category" 
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                options={uniqueCategories.filter(c => c !== "All Categories")}
+              />
             </Field>
             <Field label="Folder" required>
-              <Select placeholder="Select folder" />
+              <Select 
+                placeholder="Select folder" 
+                value={folder}
+                onChange={(e) => setFolder(e.target.value)}
+                options={folders.map(f => f.name)}
+              />
             </Field>
 
             <div>
@@ -539,6 +602,8 @@ export default function ResourcesPage() {
 
             <Field label="Description">
               <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter description..."
                 rows={3}
                 className="w-full resize-none rounded-md border border-slate-200 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-blue-400 focus:outline-none"
@@ -576,10 +641,24 @@ export default function ResourcesPage() {
             />
 
             <div className="flex gap-3 pt-2">
-              <button className="flex-1 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              <button 
+                onClick={() => {
+                  setTitle("");
+                  setCategory("");
+                  setFolder("");
+                  setVisibility("leaders");
+                  setDescription("");
+                  setAllowDownload(true);
+                  setPinTop(false);
+                }}
+                className="flex-1 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
                 Cancel
               </button>
-              <button className="flex-1 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800">
+              <button 
+                onClick={handleUpload}
+                className="flex-1 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800"
+              >
                 Upload
               </button>
             </div>

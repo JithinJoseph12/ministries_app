@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Upload, X, HelpCircle, Heart, Users, Globe, Mail, Calendar, 
   MapPin, Target, BookOpen, CheckCircle, FileText, ImagePlus,
@@ -44,7 +45,7 @@ const MinistryPage = () => {
   const fileInputRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-
+  const router = useRouter();
   // Mock data for selects
   const categories = [
     "Worship & Music",
@@ -177,8 +178,11 @@ const MinistryPage = () => {
 
         if (response.ok) {
           setShowSuccessPopup(true);
-          setTimeout(() => setShowSuccessPopup(false), 3000);
-          handleCancel(false); // Reset the form after success
+  setTimeout(() => {
+    setShowSuccessPopup(false);
+    router.push("/dashboard/ministries");
+  }, 1500);   
+         handleCancel(false); // Reset the form after success
         } else {
           alert(`Error: ${data.message || "Failed to publish ministry"}`);
         }
