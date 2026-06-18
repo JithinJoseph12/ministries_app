@@ -43,7 +43,7 @@ const navItems = [
     },
     { icon: Folder, label: "Public Resources", href: "/dashboard/resources" },
     { icon: FolderLock, label: "Resource Center",
-         href: "/dashboard/resources",
+         href: "/dashboard/internal-resources",
                 subItems: [
             { label: "Leader Directory", href: "/dashboard/internal-resources/leader-directory" },
             { label: "Shared Resources", href: "/dashboard/internal-resources/shared-resources" },
@@ -174,36 +174,52 @@ export default function DashboardSidebar() {
                             )}
 
                             {/* Sub Items */}
-                            {item.subItems && isOpen && (
-                                <div className="flex flex-col mt-1 mb-1 gap-1">
-                                    {item.subItems.map(subItem => {
-                                        const isSubActive = pathname === subItem.href;
-                                        return (
-                                            <Link
-                                                key={subItem.label}
-                                                href={subItem.href}
-                                                className={`flex items-center pl-12 pr-3 py-2.5 w-full text-left transition-all rounded-r-full ${isSubActive ? "bg-white/5" : "hover:bg-white/5"
-                                                    }`}
-                                                style={{
-                                                    color: isSubActive ? "#c9a553" : "#a8b8d4",
-                                                    fontFamily: "'Inter', sans-serif",
-                                                    fontSize: "15px",
-                                                    fontWeight: isSubActive ? 600 : 500,
-                                                }}
-                                            >
-                                                <span
-                                                    className="w-1.5 h-1.5 rounded-full mr-3 flex-shrink-0"
-                                                    style={{
-                                                        backgroundColor: isSubActive ? "#c9a553" : "transparent",
-                                                        border: isSubActive ? "none" : "1px solid #6b89b8"
-                                                    }}
-                                                />
-                                                {subItem.label}
-                                            </Link>
-                                        );
-                                    })}
-                                </div>
-                            )}
+{/* Sub Items */}
+{item.subItems && isOpen && (
+  <div className="relative ml-6 mt-2 mb-2">
+
+    {/* Vertical Line */}
+    <div
+      className="absolute left-[6px] top-0 bottom-4 w-px"
+      style={{
+        background: "rgba(168,184,212,0.35)",
+      }}
+    />
+
+    <div className="flex flex-col gap-1">
+      {item.subItems.map((subItem) => {
+        const isSubActive = pathname === subItem.href;
+
+        return (
+          <Link
+            key={subItem.label}
+            href={subItem.href}
+            className="relative flex items-center pl-7 pr-3 py-2.5"
+            style={{
+              color: isSubActive ? "#ffffff" : "#a8b8d4",
+              fontFamily: "'Inter', sans-serif",
+              fontSize: "15px",
+              fontWeight: isSubActive ? 600 : 500,
+            }}
+          >
+            {/* Connection Dot */}
+            <span
+              className="absolute left-0 w-3 h-3 rounded-full"
+              style={{
+                backgroundColor: isSubActive
+                  ? "#c9a553"
+                  : "#8AA1C8",
+                border: "2px solid #0d1b38",
+              }}
+            />
+
+            {subItem.label}
+          </Link>
+        );
+      })}
+    </div>
+  </div>
+)}
                         </div>
                     );
                 })}

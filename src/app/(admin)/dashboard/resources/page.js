@@ -122,6 +122,25 @@ export default function ResourcesPage() {
     });
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedMinistry, setSelectedMinistry] = useState('All Ministries');
+    const [selectedCategory, setSelectedCategory] = useState('All Categories');
+    const [selectedVisibility, setSelectedVisibility] = useState('All Visibility');
+
+    const uniqueMinistries = ['All Ministries', ...new Set(resources.map(r => r.ministry))];
+    const uniqueCategories = ['All Categories', ...new Set(resources.map(r => r.category))];
+    const uniqueVisibilities = ['All Visibility', ...new Set(resources.map(r => r.visibility))];
+
+    const filteredResources = resources.filter(resource => {
+        const matchesSearch = resource.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              resource.description.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesMinistry = selectedMinistry === 'All Ministries' || resource.ministry === selectedMinistry;
+        const matchesCategory = selectedCategory === 'All Categories' || resource.category === selectedCategory;
+        const matchesVisibility = selectedVisibility === 'All Visibility' || resource.visibility === selectedVisibility;
+
+        return matchesSearch && matchesMinistry && matchesCategory && matchesVisibility;
+    });
+
     const toggleSection = (section) => {
         setOpenSections(prev => ({
             ...prev,
@@ -242,18 +261,46 @@ export default function ResourcesPage() {
                                     <input
                                         className="w-full border border-[#E5E7EB] rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 bg-white focus:ring-[#0A49B7] focus:border-transparent"
                                         placeholder="Search Resources..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
                                     />
                                 </div>
-                                <select className="border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#0A49B7] focus:border-transparent bg-white">
-                                    <option>All Ministries</option>
+                                <select 
+                                    className="border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#0A49B7] focus:border-transparent bg-white"
+                                    value={selectedMinistry}
+                                    onChange={(e) => setSelectedMinistry(e.target.value)}
+                                >
+                                    {uniqueMinistries.map(ministry => (
+                                        <option key={ministry} value={ministry}>{ministry}</option>
+                                    ))}
                                 </select>
-                                <select className="border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#0A49B7] focus:border-transparent bg-white">
-                                    <option>All Categories</option>
+                                <select 
+                                    className="border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#0A49B7] focus:border-transparent bg-white"
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                >
+                                    {uniqueCategories.map(category => (
+                                        <option key={category} value={category}>{category}</option>
+                                    ))}
                                 </select>
-                                <select className="border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#0A49B7] focus:border-transparent bg-white">
-                                    <option>All Visibility</option>
+                                <select 
+                                    className="border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#0A49B7] focus:border-transparent bg-white"
+                                    value={selectedVisibility}
+                                    onChange={(e) => setSelectedVisibility(e.target.value)}
+                                >
+                                    {uniqueVisibilities.map(visibility => (
+                                        <option key={visibility} value={visibility}>{visibility}</option>
+                                    ))}
                                 </select>
-                                <button className="border border-[#E5E7EB] rounded-lg px-4 py-3 hover:bg-slate-50 transition-colors bg-white">
+                                <button 
+                                    className="border border-[#E5E7EB] rounded-lg px-4 py-3 hover:bg-slate-50 transition-colors bg-white"
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setSelectedMinistry('All Ministries');
+                                        setSelectedCategory('All Categories');
+                                        setSelectedVisibility('All Visibility');
+                                    }}
+                                >
                                     Clear
                                 </button>
                             </div>
@@ -262,8 +309,8 @@ export default function ResourcesPage() {
                             {/* RESOURCE TABLE */}
                             <div className="bg-white border border-[#E5EAF1] rounded-2xl overflow-hidden">
                                 <div className="px-6 py-5 border-b border-[#EEF2F7]">
-                                    <h2 className="text-[28px] font-bold text-[#1E2A5A]">
-                                        Resources ({totalResources})
+                                    <h2 className="text-[24px] font-bold text-[#1E2A5A]">
+                                        Resources ({filteredResources.length})
                                     </h2>
                                 </div>
                                 <table className="w-full">
@@ -293,7 +340,7 @@ export default function ResourcesPage() {
 
                                     <tbody>
 
-                                        {resources.map((resource) => (
+                                        {filteredResources.map((resource) => (
                                             <tr key={resource.id} className="border-b border-[#EEF2F7] hover:bg-[#FAFBFD]">
 
                                                 {/* Resource */}
@@ -392,7 +439,7 @@ export default function ResourcesPage() {
                                 <div className="px-5 py-4 flex items-center justify-between">
 
                                     <p className="text-sm text-[#64748B]">
-                                        Showing 1 to {totalResources} of {totalResources} resources
+                                        Showing {filteredResources.length > 0 ? 1 : 0} to {filteredResources.length} of {filteredResources.length} resources
                                     </p>
 
                                     <div className="flex items-center gap-2">
@@ -608,7 +655,7 @@ export default function ResourcesPage() {
 
                                     <div className="border border-[#E7ECF3] rounded-xl overflow-hidden mb-5">
 
-                                        <div 
+                                        <div
                                             className={`h-[58px] px-5 flex items-center justify-between cursor-pointer ${openSections[1] ? 'bg-[#FCFCFD] border-b border-[#EEF2F7]' : 'bg-white'}`}
                                             onClick={() => toggleSection(1)}
                                         >
@@ -636,128 +683,128 @@ export default function ResourcesPage() {
                                         </div>
 
                                         {openSections[1] && (
-                                        <div className="p-6">
+                                            <div className="p-6">
 
-                                            {/* Resource Title */}
+                                                {/* Resource Title */}
 
-                                            <div className="mb-5">
-
-                                                <label className="block text-sm font-semibold text-[#111827] mb-2">
-                                                    Resource Title <span className="text-red-500">*</span>
-                                                </label>
-
-                                                <input
-                                                    placeholder="Enter resource title"
-                                                    className="w-full h-[56px] px-4 border border-[#D9E2EC] rounded-lg outline-none focus:border-[#0A49B7]"
-                                                />
-
-                                            </div>
-
-                                            {/* Category + Ministry */}
-
-                                            <div className="grid grid-cols-2 gap-4 mb-5">
-
-                                                <div>
+                                                <div className="mb-5">
 
                                                     <label className="block text-sm font-semibold text-[#111827] mb-2">
-                                                        Resource Category <span className="text-red-500">*</span>
+                                                        Resource Title <span className="text-red-500">*</span>
                                                     </label>
 
-                                                    <select className="w-full h-[56px] px-4 border border-[#D9E2EC] rounded-lg bg-white outline-none">
-                                                        <option>Select category</option>
-                                                    </select>
-
-                                                </div>
-
-                                                <div>
-
-                                                    <label className="block text-sm font-semibold text-[#111827] mb-2">
-                                                        Ministry <span className="text-red-500">*</span>
-                                                    </label>
-
-                                                    <select className="w-full h-[56px] px-4 border border-[#D9E2EC] rounded-lg bg-white outline-none">
-                                                        <option>Select ministry</option>
-                                                    </select>
-
-                                                </div>
-
-                                            </div>
-
-                                            {/* Short Description */}
-
-                                            <div className="mb-5">
-
-                                                <label className="block text-sm font-semibold text-[#111827] mb-2">
-                                                    Short Description <span className="text-red-500">*</span>
-                                                </label>
-
-                                                <div className="relative">
-
-                                                    <textarea
-                                                        rows={4}
-                                                        placeholder="Brief description (150 characters)"
-                                                        className="w-full border border-[#D9E2EC] rounded-lg p-4 resize-none outline-none"
+                                                    <input
+                                                        placeholder="Enter resource title"
+                                                        className="w-full h-[56px] px-4 border border-[#D9E2EC] rounded-lg outline-none focus:border-[#0A49B7]"
                                                     />
 
-                                                    <span className="absolute bottom-3 right-3 text-xs text-[#94A3B8]">
-                                                        0/150
-                                                    </span>
-
                                                 </div>
 
-                                            </div>
+                                                {/* Category + Ministry */}
 
-                                            {/* Full Description */}
+                                                <div className="grid grid-cols-2 gap-4 mb-5">
 
-                                            <div>
+                                                    <div>
 
-                                                <label className="block text-sm font-semibold text-[#111827] mb-2">
-                                                    Full Description
-                                                </label>
+                                                        <label className="block text-sm font-semibold text-[#111827] mb-2">
+                                                            Resource Category <span className="text-red-500">*</span>
+                                                        </label>
 
-                                                <div className="border border-[#D9E2EC] rounded-lg overflow-hidden">
-
-                                                    {/* Toolbar */}
-
-                                                    <div className="h-12 border-b border-[#D9E2EC] flex items-center gap-4 px-4 text-[#475569]">
-
-                                                        <Bold size={16} />
-
-                                                        <Italic size={16} />
-
-                                                        <Underline size={16} />
-
-                                                        <div className="w-px h-5 bg-[#E5E7EB]" />
-
-                                                        <List size={16} />
-
-                                                        <ListOrdered size={16} />
-
-                                                        <div className="w-px h-5 bg-[#E5E7EB]" />
-
-                                                        <Link size={16} />
-
-                                                        <Quote size={16} />
-
-                                                        <div className="w-px h-5 bg-[#E5E7EB]" />
-
-                                                        <Undo2 size={16} />
-
-                                                        <Redo2 size={16} />
+                                                        <select className="w-full h-[56px] px-4 border border-[#D9E2EC] rounded-lg bg-white outline-none">
+                                                            <option>Select category</option>
+                                                        </select>
 
                                                     </div>
 
-                                                    <textarea
-                                                        rows={8}
-                                                        placeholder="Enter full description..."
-                                                        className="w-full p-4 resize-none outline-none"
-                                                    />
+                                                    <div>
+
+                                                        <label className="block text-sm font-semibold text-[#111827] mb-2">
+                                                            Ministry <span className="text-red-500">*</span>
+                                                        </label>
+
+                                                        <select className="w-full h-[56px] px-4 border border-[#D9E2EC] rounded-lg bg-white outline-none">
+                                                            <option>Select ministry</option>
+                                                        </select>
+
+                                                    </div>
+
+                                                </div>
+
+                                                {/* Short Description */}
+
+                                                <div className="mb-5">
+
+                                                    <label className="block text-sm font-semibold text-[#111827] mb-2">
+                                                        Short Description <span className="text-red-500">*</span>
+                                                    </label>
+
+                                                    <div className="relative">
+
+                                                        <textarea
+                                                            rows={4}
+                                                            placeholder="Brief description (150 characters)"
+                                                            className="w-full border border-[#D9E2EC] rounded-lg p-4 resize-none outline-none"
+                                                        />
+
+                                                        <span className="absolute bottom-3 right-3 text-xs text-[#94A3B8]">
+                                                            0/150
+                                                        </span>
+
+                                                    </div>
+
+                                                </div>
+
+                                                {/* Full Description */}
+
+                                                <div>
+
+                                                    <label className="block text-sm font-semibold text-[#111827] mb-2">
+                                                        Full Description
+                                                    </label>
+
+                                                    <div className="border border-[#D9E2EC] rounded-lg overflow-hidden">
+
+                                                        {/* Toolbar */}
+
+                                                        <div className="h-12 border-b border-[#D9E2EC] flex items-center gap-4 px-4 text-[#475569]">
+
+                                                            <Bold size={16} />
+
+                                                            <Italic size={16} />
+
+                                                            <Underline size={16} />
+
+                                                            <div className="w-px h-5 bg-[#E5E7EB]" />
+
+                                                            <List size={16} />
+
+                                                            <ListOrdered size={16} />
+
+                                                            <div className="w-px h-5 bg-[#E5E7EB]" />
+
+                                                            <Link size={16} />
+
+                                                            <Quote size={16} />
+
+                                                            <div className="w-px h-5 bg-[#E5E7EB]" />
+
+                                                            <Undo2 size={16} />
+
+                                                            <Redo2 size={16} />
+
+                                                        </div>
+
+                                                        <textarea
+                                                            rows={8}
+                                                            placeholder="Enter full description..."
+                                                            className="w-full p-4 resize-none outline-none"
+                                                        />
+
+                                                    </div>
 
                                                 </div>
 
                                             </div>
-
-                                        </div>
 
                                         )}
 
@@ -767,7 +814,7 @@ export default function ResourcesPage() {
 
                                     <div className="border border-[#E7ECF3] rounded-xl overflow-hidden mb-5 bg-white">
 
-                                        <div 
+                                        <div
                                             className={`h-[58px] px-5 flex items-center justify-between cursor-pointer ${openSections[2] ? 'bg-[#FCFCFD] border-b border-[#EEF2F7]' : ''}`}
                                             onClick={() => toggleSection(2)}
                                         >
@@ -813,7 +860,7 @@ export default function ResourcesPage() {
 
                                     <div className="border border-[#E7ECF3] rounded-xl overflow-hidden mb-5 bg-white">
 
-                                        <div 
+                                        <div
                                             className={`h-[58px] px-5 flex items-center justify-between cursor-pointer ${openSections[3] ? 'bg-[#FCFCFD] border-b border-[#EEF2F7]' : ''}`}
                                             onClick={() => toggleSection(3)}
                                         >
@@ -877,7 +924,7 @@ export default function ResourcesPage() {
 
                                     <div className="border border-[#E7ECF3] rounded-xl overflow-hidden mb-5 bg-white">
 
-                                        <div 
+                                        <div
                                             className={`h-[58px] px-5 flex items-center justify-between cursor-pointer ${openSections[4] ? 'bg-[#FCFCFD] border-b border-[#EEF2F7]' : ''}`}
                                             onClick={() => toggleSection(4)}
                                         >
@@ -933,7 +980,7 @@ export default function ResourcesPage() {
                                             Save Draft
                                         </button>
 
-                                        <button 
+                                        <button
                                             onClick={() => setShowSuccessModal(true)}
                                             className="h-[50px] px-4 bg-[#082B63] text-sm text-white rounded-lg font-medium shadow-md hover:bg-[#061F4A]"
                                         >
@@ -960,7 +1007,7 @@ export default function ResourcesPage() {
                         <p className="text-[#64748B] text-[15px] mb-8 leading-relaxed">
                             Your resource has been published and is now available to users.
                         </p>
-                        <button 
+                        <button
                             onClick={() => setShowSuccessModal(false)}
                             className="w-full h-[50px] bg-[#0A49B7] text-white rounded-xl font-medium shadow-md hover:bg-[#082B63] transition-colors"
                         >
