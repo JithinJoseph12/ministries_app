@@ -3,9 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, Menu, LogOut } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/src/components/providers/AuthProvider";
 
 // ─── Top Header ────────────────────────────────────────────────────────────────
 export default function Header() {
+    const { user } = useAuth();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -57,8 +59,8 @@ export default function Header() {
                             />
                         </div>
                         <div>
-                            <p style={{ color: "#1e3a8a", fontSize: "17px", fontWeight: 700, fontFamily: "'Inter', sans-serif", lineHeight: "1.3" }}>George</p>
-                            <p style={{ color: "#6b7a99", fontSize: "12px", fontFamily: "'Inter', sans-serif", lineHeight: "1.3" }}>Super Admin</p>
+                            <p style={{ color: "#1e3a8a", fontSize: "17px", fontWeight: 700, fontFamily: "'Inter', sans-serif", lineHeight: "1.3" }}>{user?.firstName || "User"}</p>
+                            <p style={{ color: "#6b7a99", fontSize: "12px", fontFamily: "'Inter', sans-serif", lineHeight: "1.3", textTransform: "capitalize" }}>{user?.role === "superadmin" ? "Super Admin" : "Admin"}</p>
                         </div>
                         <ChevronDown size={14} style={{ color: "#6b7a99" }} />
                     </div>

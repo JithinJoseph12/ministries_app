@@ -35,7 +35,12 @@ export async function POST(req) {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { 
+        userId: user._id, 
+        email: user.email,
+        role: user.role,
+        ministryId: user.ministryId
+      },
       process.env.JWT_SECRET || "default_secret_please_change",
       { expiresIn: "7d" }
     );
@@ -56,6 +61,8 @@ export async function POST(req) {
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
+          role: user.role,
+          ministryId: user.ministryId,
         },
       },
       { status: 200 }

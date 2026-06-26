@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useAuth } from "@/src/components/providers/AuthProvider";
 
 
 
@@ -193,6 +194,7 @@ const ministries = [
 // ─── Main Page Content ────────────────────────────────────────────────────────
 export default function Home() {
     const router = useRouter();
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState("overview");
 
     return (
@@ -205,7 +207,7 @@ export default function Home() {
                         <h1
                             style={{ fontFamily: "'Playfair Display', serif", fontSize: "36px", fontWeight: 700, color: "#1e3a8a", lineHeight: "1.2", marginBottom: "6px" }}
                         >
-                            Good morning, George
+                            Good morning, <span className="text-[#c9a553] text-3xl" >{user?.firstName || "User"}</span>
                         </h1>
                         <p style={{ color: "#6b7a99", fontSize: "17px", marginBottom: "10px" }}>
                             Welcome to The Upper Room Ministry Hub
@@ -252,14 +254,31 @@ export default function Home() {
                     </h2>
 
                     <div className="grid grid-cols-4 gap-4">
-                        <QuickActionCard
-                            icon={Church}
-                            iconBg="#fff8e1"
-                            iconColor="#f59e0b"
-                            title="Add Ministry"
-                            description="Create a new ministry"
-                            onClick={() => router.push('/dashboard/ministries/add')}
-                        />
+                        {user?.role === 'admin' ? (
+                            <QuickActionCard
+                                icon={Church}
+                                iconBg="#fff8e1"
+                                iconColor="#f59e0b"
+                                title="Edit Ministry"
+                                description="Update your ministry details"
+                                onClick={() => {
+                                    if (user?.ministryId) {
+                                        router.push(`/dashboard/ministries/add?editId=${user.ministryId}`);
+                                    } else {
+                                        alert("No ministry assigned to your account.");
+                                    }
+                                }}
+                            />
+                        ) : (
+                            <QuickActionCard
+                                icon={Church}
+                                iconBg="#fff8e1"
+                                iconColor="#f59e0b"
+                                title="Add Ministry"
+                                description="Create a new ministry"
+                                onClick={() => router.push('/dashboard/ministries/add')}
+                            />
+                        )}
                         <QuickActionCard
                             icon={CalendarPlus}
                             iconBg="#e0f7fa"

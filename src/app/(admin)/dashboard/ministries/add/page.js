@@ -1,13 +1,14 @@
 // app/ministry/page.jsx
 "use client";
 
-import React, { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { 
-  Upload, X, HelpCircle, Heart, Users, Globe, Mail, Calendar, 
+import React, { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/src/components/providers/AuthProvider";
+import {
+  Upload, X, HelpCircle, Heart, Users, Globe, Mail, Calendar,
   MapPin, Target, BookOpen, CheckCircle, FileText, ImagePlus,
   Church, ChevronDown, Bold, Italic, Underline, List, ListOrdered,
-  AlignLeft, AlignCenter, AlignRight, Undo2, Redo2, Lightbulb, Check,  Info,
+  AlignLeft, AlignCenter, AlignRight, Undo2, Redo2, Lightbulb, Check, Info,
 
   BriefcaseBusiness,
   ImageIcon,
@@ -16,6 +17,33 @@ import {
 } from "lucide-react";
 
 const MinistryPage = () => {
+  const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('editId');
+  const isEditing = !!editId;
+  const [isLoading, setIsLoading] = useState(isEditing);
+
+  if (user && user.role !== "superadmin" && !(isEditing && user.role === "admin")) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f4f6fb]">
+        <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-red-100 max-w-md">
+          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X size={32} />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-500 mb-6">You do not have permission to access this page.</p>
+          <button
+            onClick={() => router.push('/dashboard/ministries')}
+            className="px-6 py-2 bg-[#082B63] text-white rounded-lg hover:bg-[#0B3578] transition-colors"
+          >
+            Return to Ministries
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // State for form fields
   const [formData, setFormData] = useState({
     // Basic Information
@@ -45,7 +73,47 @@ const MinistryPage = () => {
   const fileInputRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const router = useRouter();
+
+  useEffect(() => {
+    if (isEditing && editId) {
+      const fetchMinistry = async () => {
+        try {
+          const res = await fetch(`/api/ministries/${editId}`);
+          const data = await res.json();
+          if (data.success) {
+            const m = data.ministry;
+            setFormData({
+              ministryName: m.name || "",
+              category: m.category || "",
+              missionStatement: m.missionStatement || "",
+              fullDescription: m.fullDescription || "",
+              yearFounded: m.yearFounded || "",
+              primaryLocation: m.primaryLocation || "",
+              serviceArea: m.serviceArea || "",
+              website: m.website || "",
+              email: m.email || "",
+              leader: m.leader || "",
+              whatWeDo: m.whatWeDo || "",
+              whoWeServe: m.whoWeServe || "",
+              ministryLogo: null,
+              logoPreview: m.logoUrl || null,
+            });
+            setSelectedCategory(m.category || "");
+            setSelectedServiceArea(m.serviceArea || "");
+            if (m.fullDescription) {
+              setCharCount(m.fullDescription.length);
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching ministry:", err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchMinistry();
+    }
+  }, [isEditing, editId]);
+
   // Mock data for selects
   const categories = [
     "Worship & Music",
@@ -148,7 +216,7 @@ const MinistryPage = () => {
   // Handle form submission
   const handleSubmit = async (e, action) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!formData.ministryName.trim()) {
       alert("Please enter a ministry name");
@@ -162,12 +230,14 @@ const MinistryPage = () => {
       alert("Please enter a mission statement");
       return;
     }
-    
+
     if (action === "publish") {
       try {
         setIsSubmitting(true);
-        const response = await fetch("/api/ministries", {
-          method: "POST",
+        const url = isEditing ? `/api/ministries/${editId}` : "/api/ministries";
+        const method = isEditing ? "PATCH" : "POST";
+        const response = await fetch(url, {
+          method: method,
           headers: {
             "Content-Type": "application/json",
           },
@@ -178,17 +248,17 @@ const MinistryPage = () => {
 
         if (response.ok) {
           setShowSuccessPopup(true);
-  setTimeout(() => {
-    setShowSuccessPopup(false);
-    router.push("/dashboard/ministries");
-  }, 1500);   
-         handleCancel(false); // Reset the form after success
+          setTimeout(() => {
+            setShowSuccessPopup(false);
+            router.push("/dashboard/ministries");
+          }, 1500);
+          if (!isEditing) handleCancel(false); // Reset the form after success only if adding
         } else {
-          alert(`Error: ${data.message || "Failed to publish ministry"}`);
+          alert(`Error: ${data.message || (isEditing ? "Failed to update ministry" : "Failed to publish ministry")}`);
         }
       } catch (error) {
         console.error("Submit error:", error);
-        alert("An error occurred while publishing the ministry.");
+        alert(`An error occurred while ${isEditing ? "updating" : "publishing"} the ministry.`);
       } finally {
         setIsSubmitting(false);
       }
@@ -254,20 +324,23 @@ const MinistryPage = () => {
     },
   ];
 
+  if (isLoading) {
+    return <div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-white relative">
       {/* Animated Success Popup */}
-      <div 
-        className={`fixed top-6 right-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 transition-all duration-500 z-50 ${
-          showSuccessPopup ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none"
-        }`}
+      <div
+        className={`fixed top-6 right-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 transition-all duration-500 z-50 ${showSuccessPopup ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none"
+          }`}
       >
         <div className="bg-emerald-100 p-1.5 rounded-full">
           <CheckCircle className="w-5 h-5 text-emerald-600" />
         </div>
         <div>
-          <h4 className="font-semibold text-emerald-900">Successfully Added</h4>
-          <p className="text-sm text-emerald-700">The ministry has been published.</p>
+          <h4 className="font-semibold text-emerald-900">{isEditing ? "Successfully Updated" : "Successfully Added"}</h4>
+          <p className="text-sm text-emerald-700">The ministry has been {isEditing ? "updated" : "published"}.</p>
         </div>
       </div>
 
@@ -275,66 +348,66 @@ const MinistryPage = () => {
         <div className="p-8 max-w-[1400px] mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <div className="text-sm text-gray-500 mb-1">Ministry / Add New Ministry</div>
-            <h1 className="text-3xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#1e3a8a" }}>Add New Ministry</h1>
-            <p className="text-gray-500 mt-1">Fill in the details below to create a new ministry profile.</p>
+            <div className="text-sm text-gray-500 mb-1">Ministry / {isEditing ? "Edit Ministry" : "Add New Ministry"}</div>
+            <h1 className="text-3xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#1e3a8a" }}>{isEditing ? "Edit Ministry" : "Add New Ministry"}</h1>
+            <p className="text-gray-500 mt-1">{isEditing ? "Update the details below to edit the ministry profile." : "Fill in the details below to create a new ministry profile."}</p>
           </div>
 
           <div
-  className="bg-white rounded-2xl border border-[#e8edf5] flex items-center overflow-hidden mb-8"
-  style={{
-    height: "66px",
-  }}
->
-  {steps.map((step, index) => {
-    const Icon = step.icon;
-    const isActive = index === currentStep;
-
-    return (
-      <button
-        key={index}
-        type="button"
-        onClick={() => {
-          setCurrentStep(index);
-          const element = document.getElementById(step.id);
-          if (element) {
-            element.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }}
-        className="relative flex-1 h-full flex items-center justify-center gap-2 transition-all hover:bg-gray-50"
-      >
-        {isActive && (
-          <div
-            className="absolute bottom-0 left-0 w-full"
+            className="bg-white rounded-2xl border border-[#e8edf5] flex items-center overflow-hidden mb-8"
             style={{
-              height: "3px",
-              background: "#D6A646",
+              height: "66px",
             }}
-          />
-        )}
+          >
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = index === currentStep;
 
-        <Icon
-          size={18}
-          strokeWidth={2}
-          style={{
-            color: isActive ? "#D6A646" : "#6B7280",
-          }}
-        />
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => {
+                    setCurrentStep(index);
+                    const element = document.getElementById(step.id);
+                    if (element) {
+                      element.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                  }}
+                  className="relative flex-1 h-full flex items-center justify-center gap-2 transition-all hover:bg-gray-50"
+                >
+                  {isActive && (
+                    <div
+                      className="absolute bottom-0 left-0 w-full"
+                      style={{
+                        height: "3px",
+                        background: "#D6A646",
+                      }}
+                    />
+                  )}
 
-        <span
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: "14px",
-            fontWeight: 600,
-            color: isActive ? "#D6A646" : "#243B63",
-          }}
-        >
-          {step.label}
-        </span>
-      </button>
-    );
-  })}
-</div>
+                  <Icon
+                    size={18}
+                    strokeWidth={2}
+                    style={{
+                      color: isActive ? "#D6A646" : "#6B7280",
+                    }}
+                  />
+
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: isActive ? "#D6A646" : "#243B63",
+                    }}
+                  >
+                    {step.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
           <form onSubmit={(e) => handleSubmit(e, "publish")}>
             <div className="grid lg:grid-cols-12 gap-8">
@@ -645,7 +718,7 @@ const MinistryPage = () => {
                   )}
                 </div>
 
-                                {/* 3. Additional Information */}
+                {/* 3. Additional Information */}
                 <div id="additional-information" className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm scroll-mt-24">
                   <div className="flex items-center gap-3 mb-5">
                     <div
@@ -715,14 +788,14 @@ const MinistryPage = () => {
                     disabled={isSubmitting}
                     className="px-6 py-2.5 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 transition shadow-sm disabled:bg-blue-400"
                   >
-                    {isSubmitting ? "Publishing..." : "Publish Ministry"}
+                    {isSubmitting ? (isEditing ? "Updating..." : "Publishing...") : (isEditing ? "Update Ministry" : "Publish Ministry")}
                   </button>
                 </div>
               </div>
 
               {/* Right Column - Sidebar */}
               <div className="lg:col-span-4 space-y-6">
-  
+
 
                 {/* Tips */}
                 <div className="bg-white rounded-2xl border border-[#e8edf5] p-6 shadow-sm">
@@ -775,52 +848,52 @@ const MinistryPage = () => {
                 </div>
 
                 <div className="bg-white rounded-2xl border border-[#e8edf5] p-5 shadow-sm">
-  <div className="flex items-start gap-3">
-    {/* Icon */}
-    <div
-      className="w-8 h-8 rounded-full flex items-center justify-center"
-      style={{
-        background: "#FFF7F7",
-      }}
-    >
-      <Heart
-        size={17}
-        strokeWidth={2}
-        style={{
-          color: "#E98C8C",
-        }}
-      />
-    </div>
+                  <div className="flex items-start gap-3">
+                    {/* Icon */}
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      style={{
+                        background: "#FFF7F7",
+                      }}
+                    >
+                      <Heart
+                        size={17}
+                        strokeWidth={2}
+                        style={{
+                          color: "#E98C8C",
+                        }}
+                      />
+                    </div>
 
-    {/* Content */}
-    <div>
-      <h3
-        style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: "22px",
-          fontWeight: 700,
-          color: "#1e3a8a",
-          lineHeight: "1.2",
-          marginBottom: "10px",
-        }}
-      >
-        Why This Matters
-      </h3>
+                    {/* Content */}
+                    <div>
+                      <h3
+                        style={{
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: "22px",
+                          fontWeight: 700,
+                          color: "#1e3a8a",
+                          lineHeight: "1.2",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        Why This Matters
+                      </h3>
 
-      <p
-        style={{
-          fontFamily: "'Inter', sans-serif",
-          fontSize: "14px",
-          color: "#6B7280",
-          lineHeight: "1.7",
-          fontWeight: 500,
-        }}
-      >
-        A complete ministry profile helps others discover and connect with your mission.
-      </p>
-    </div>
-  </div>
-</div>
+                      <p
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: "14px",
+                          color: "#6B7280",
+                          lineHeight: "1.7",
+                          fontWeight: 500,
+                        }}
+                      >
+                        A complete ministry profile helps others discover and connect with your mission.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Need Help */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">

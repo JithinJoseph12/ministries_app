@@ -31,9 +31,10 @@ import {
     Mail
 } from 'lucide-react';
 import { GiDove } from "react-icons/gi";
+import { useEvents } from '@/src/hooks/useEvents';
 
 // Event Data
-const allEvents = [
+const _allEvents = [
     {
         id: 1,
         title: "Eucharistic Miracles Exhibit",
@@ -222,6 +223,7 @@ const getCurrentMonthDates = () => {
 };
 
 export default function EventsPage() {
+    const { events: allEvents, isLoading, getCalendarDays } = useEvents();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedTimeFilter, setSelectedTimeFilter] = useState('Upcoming');
@@ -260,20 +262,8 @@ export default function EventsPage() {
     const selectedEvent = selectedEventId ? allEvents.find(e => e.id === selectedEventId) : featuredEvents[0];
 
     // Calendar days generation
-    const calendarDays = [];
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-    for (let i = 0; i < startingDayOfWeek; i++) {
-        calendarDays.push(null);
-    }
-
-    for (let i = 1; i <= daysInMonth; i++) {
-        const hasEvent = allEvents.some(event => {
-            const eventDate = new Date(event.startDate);
-            return eventDate.getDate() === i && eventDate.getMonth() === selectedMonth && eventDate.getFullYear() === selectedYear;
-        });
-        calendarDays.push({ day: i, hasEvent });
-    }
+    const calendarDays = getCalendarDays(selectedYear, selectedMonth, allEvents, 'nulls');
 
     const handlePrevMonth = () => {
         if (selectedMonth === 0) {
@@ -341,204 +331,204 @@ export default function EventsPage() {
             <Navbar />
 
             {/* Hero Section */}
-<section className="bg-white overflow-hidden border-b border-[#EEF2F7]">
-  <div className=" mx-auto">
+            <section className="bg-white overflow-hidden border-b border-[#EEF2F7]">
+                <div className=" mx-auto">
 
-    <div className="grid lg:grid-cols-[55%_45%] items-center">
+                    <div className="grid lg:grid-cols-[55%_45%] items-center">
 
-      {/* Left */}
+                        {/* Left */}
 
-      <div className="px-16 py-12">
+                        <div className="px-16 py-12">
 
-        <h1
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: "62px",
-            fontWeight: 700,
-            lineHeight: "1.08",
-            color: "#082B63",
-          }}
-        >
-          Upcoming Catholic Events
-        </h1>
+                            <h1
+                                style={{
+                                    fontFamily: "'Playfair Display', serif",
+                                    fontSize: "62px",
+                                    fontWeight: 700,
+                                    lineHeight: "1.08",
+                                    color: "#082B63",
+                                }}
+                            >
+                                Upcoming Catholic Events
+                            </h1>
 
-        <p
-          className="mt-6"
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: "18px",
-            color: "#31456A",
-            lineHeight: "1.8",
-            maxWidth: "780px",
-          }}
-        >
-          Discover retreats, prayer gatherings, pro-life events,
-          youth programs, formation opportunities, and ministry
-          events happening across Southeast Pennsylvania.
-        </p>
+                            <p
+                                className="mt-6"
+                                style={{
+                                    fontFamily: "'Inter', sans-serif",
+                                    fontSize: "18px",
+                                    color: "#31456A",
+                                    lineHeight: "1.8",
+                                    maxWidth: "780px",
+                                }}
+                            >
+                                Discover retreats, prayer gatherings, pro-life events,
+                                youth programs, formation opportunities, and ministry
+                                events happening across Southeast Pennsylvania.
+                            </p>
 
-        {/* Stats */}
+                            {/* Stats */}
 
-        <div className="grid grid-cols-4 gap-10 mt-12 max-w-5xl">
+                            <div className="grid grid-cols-4 gap-10 mt-12 max-w-5xl">
 
-          {/* Events */}
+                                {/* Events */}
 
-          <div className="flex items-start gap-4">
+                                <div className="flex items-start gap-4">
 
-            <CalendarDays
-              size={42}
-              color="#D6A646"
-            />
+                                    <CalendarDays
+                                        size={42}
+                                        color="#D6A646"
+                                    />
 
-            <div>
+                                    <div>
 
-              <h3
-                className="font-bold"
-                style={{
-                  fontSize: "30px",
-                  color: "#082B63",
-                }}
-              >
-                200+
-              </h3>
+                                        <h3
+                                            className="font-bold"
+                                            style={{
+                                                fontSize: "30px",
+                                                color: "#082B63",
+                                            }}
+                                        >
+                                            200+
+                                        </h3>
 
-              <p
-                style={{
-                  color: "#31456A",
-                  fontSize: "15px",
-                }}
-              >
-                Events Annually
-              </p>
+                                        <p
+                                            style={{
+                                                color: "#31456A",
+                                                fontSize: "15px",
+                                            }}
+                                        >
+                                            Events Annually
+                                        </p>
 
-            </div>
+                                    </div>
 
-          </div>
+                                </div>
 
-          {/* Ministries */}
+                                {/* Ministries */}
 
-          <div className="flex items-start gap-4">
+                                <div className="flex items-start gap-4">
 
-            <Users
-              size={42}
-              color="#D6A646"
-            />
+                                    <Users
+                                        size={42}
+                                        color="#D6A646"
+                                    />
 
-            <div>
+                                    <div>
 
-              <h3
-                className="font-bold"
-                style={{
-                  fontSize: "30px",
-                  color: "#082B63",
-                }}
-              >
-                20+
-              </h3>
+                                        <h3
+                                            className="font-bold"
+                                            style={{
+                                                fontSize: "30px",
+                                                color: "#082B63",
+                                            }}
+                                        >
+                                            20+
+                                        </h3>
 
-              <p
-                style={{
-                  color: "#31456A",
-                  fontSize: "15px",
-                }}
-              >
-                Ministries
-              </p>
+                                        <p
+                                            style={{
+                                                color: "#31456A",
+                                                fontSize: "15px",
+                                            }}
+                                        >
+                                            Ministries
+                                        </p>
 
-            </div>
+                                    </div>
 
-          </div>
+                                </div>
 
-          {/* Location */}
+                                {/* Location */}
 
-          <div className="flex items-start gap-4">
+                                <div className="flex items-start gap-4">
 
-            <MapPin
-              size={42}
-              color="#D6A646"
-            />
+                                    <MapPin
+                                        size={42}
+                                        color="#D6A646"
+                                    />
 
-            <div>
+                                    <div>
 
-              <h3
-                className="font-bold"
-                style={{
-                  fontSize: "26px",
-                  color: "#082B63",
-                }}
-              >
-                Southeast
-              </h3>
+                                        <h3
+                                            className="font-bold"
+                                            style={{
+                                                fontSize: "26px",
+                                                color: "#082B63",
+                                            }}
+                                        >
+                                            Southeast
+                                        </h3>
 
-              <p
-                style={{
-                  color: "#31456A",
-                  fontSize: "15px",
-                }}
-              >
-                Pennsylvania
-              </p>
+                                        <p
+                                            style={{
+                                                color: "#31456A",
+                                                fontSize: "15px",
+                                            }}
+                                        >
+                                            Pennsylvania
+                                        </p>
 
-            </div>
+                                    </div>
 
-          </div>
+                                </div>
 
-          {/* Mission */}
+                                {/* Mission */}
 
-          <div className="flex items-start gap-4">
+                                <div className="flex items-start gap-4">
 
-            <Cross
-              size={42}
-              color="#D6A646"
-            />
+                                    <Cross
+                                        size={42}
+                                        color="#D6A646"
+                                    />
 
-            <div>
+                                    <div>
 
-              <h3
-                className="font-bold"
-                style={{
-                  fontSize: "26px",
-                  color: "#082B63",
-                }}
-              >
-                One
-              </h3>
+                                        <h3
+                                            className="font-bold"
+                                            style={{
+                                                fontSize: "26px",
+                                                color: "#082B63",
+                                            }}
+                                        >
+                                            One
+                                        </h3>
 
-              <p
-                style={{
-                  color: "#31456A",
-                  fontSize: "15px",
-                }}
-              >
-                Unified Mission
-              </p>
+                                        <p
+                                            style={{
+                                                color: "#31456A",
+                                                fontSize: "15px",
+                                            }}
+                                        >
+                                            Unified Mission
+                                        </p>
 
-            </div>
+                                    </div>
 
-          </div>
+                                </div>
 
-        </div>
+                            </div>
 
-      </div>
+                        </div>
 
-      {/* Right */}
+                        {/* Right */}
 
-      <div className="relative h-[380px]">
+                        <div className="relative h-[380px]">
 
-        <Image
-          src="/images/mary_cathedral.png"
-          alt="Mary and Cathedral"
-          fill
-          priority
-          className="object-cover object-center"
-        />
+                            <Image
+                                src="/images/mary_cathedral.png"
+                                alt="Mary and Cathedral"
+                                fill
+                                priority
+                                className="object-cover object-center"
+                            />
 
-      </div>
+                        </div>
 
-    </div>
+                    </div>
 
-  </div>
-</section>
+                </div>
+            </section>
 
             {/* Search and Filter Bar */}
             <section className=" z-20 bg-white mt-6">
@@ -623,14 +613,26 @@ export default function EventsPage() {
 
                         ))}
 
-                        <button
-                            className="w-10 h-10 rounded-xl border border-[#E8EDF5] flex items-center justify-center"
-                        >
+                        <div className="relative w-10 h-10 rounded-xl border border-[#E8EDF5] flex items-center justify-center cursor-pointer overflow-hidden hover:bg-gray-50 transition-colors">
                             <CalendarDays
                                 size={18}
                                 color="#243B63"
+                                className="absolute pointer-events-none"
                             />
-                        </button>
+                            <input
+                                type="month"
+                                value={`${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`}
+                                onChange={(e) => {
+                                    if (e.target.value) {
+                                        const [year, month] = e.target.value.split('-');
+                                        setSelectedYear(parseInt(year));
+                                        setSelectedMonth(parseInt(month) - 1);
+                                    }
+                                }}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                title="Select Month"
+                            />
+                        </div>
 
                     </div>
 
@@ -646,10 +648,10 @@ export default function EventsPage() {
                             {/* Calendar Header */}
                             <div className="flex justify-between items-center mb-8">
                                 <div className="flex gap-2">
-                                    <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-[#082B63] hover:bg-gray-50 transition-colors">
+                                    <button onClick={handlePrevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-[#082B63] hover:bg-gray-50 transition-colors">
                                         <ChevronLeft size={16} />
                                     </button>
-                                    <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-[#082B63] hover:bg-gray-50 transition-colors">
+                                    <button onClick={handleNextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-[#082B63] hover:bg-gray-50 transition-colors">
                                         <ChevronRight size={16} />
                                     </button>
                                 </div>
@@ -659,12 +661,25 @@ export default function EventsPage() {
                                 </h3>
 
                                 <div className="flex gap-2 items-center">
-                                    <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">
+                                    {/* <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">
                                         Month <ChevronDown size={14} />
-                                    </button>
-                                    <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
-                                        <CalendarDays size={16} />
-                                    </button>
+                                    </button> */}
+                                    <div className="relative w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden">
+                                        <CalendarDays size={16} className="absolute pointer-events-none" />
+                                        <input
+                                            type="month"
+                                            value={`${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`}
+                                            onChange={(e) => {
+                                                if (e.target.value) {
+                                                    const [year, month] = e.target.value.split('-');
+                                                    setSelectedYear(parseInt(year));
+                                                    setSelectedMonth(parseInt(month) - 1);
+                                                }
+                                            }}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            title="Select Month"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -1219,96 +1234,96 @@ export default function EventsPage() {
             </section>
 
             {/* Newsletter Section */}
-<section className=" mx-auto px-28 pb-16">
+            <section className=" mx-auto px-28 pb-16">
 
-  <div
-    className="rounded-2xl px-8 py-6 flex flex-col lg:flex-row items-center justify-between gap-8 shadow-sm"
-    style={{
-      background: "#062B6F",
-      border: "1px solid #17458F",
-    }}
-  >
+                <div
+                    className="rounded-2xl px-8 py-6 flex flex-col lg:flex-row items-center justify-between gap-8 shadow-sm"
+                    style={{
+                        background: "#062B6F",
+                        border: "1px solid #17458F",
+                    }}
+                >
 
-    {/* Left */}
+                    {/* Left */}
 
-    <div className="flex items-center gap-5">
+                    <div className="flex items-center gap-5">
 
-      <div
-        className="w-16 h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0"
-      >
-        <Mail
-          size={34}
-          strokeWidth={1.8}
-          color="#062B6F"
-        />
-      </div>
+                        <div
+                            className="w-16 h-16 rounded-full bg-white flex items-center justify-center flex-shrink-0"
+                        >
+                            <Mail
+                                size={34}
+                                strokeWidth={1.8}
+                                color="#062B6F"
+                            />
+                        </div>
 
-      <div>
+                        <div>
 
-        <h3
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: "34px",
-            fontWeight: 700,
-            color: "#FFFFFF",
-            lineHeight: "1.2",
-          }}
-        >
-          Never Miss An Event
-        </h3>
+                            <h3
+                                style={{
+                                    fontFamily: "'Playfair Display', serif",
+                                    fontSize: "34px",
+                                    fontWeight: 700,
+                                    color: "#FFFFFF",
+                                    lineHeight: "1.2",
+                                }}
+                            >
+                                Never Miss An Event
+                            </h3>
 
-        <p
-          className="mt-1"
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: "14px",
-            color: "#D7E3FF",
-            lineHeight: "1.7",
-          }}
-        >
-          Receive updates about upcoming Catholic events
-          <br />
-          and ministry activities.
-        </p>
+                            <p
+                                className="mt-1"
+                                style={{
+                                    fontFamily: "'Inter', sans-serif",
+                                    fontSize: "14px",
+                                    color: "#D7E3FF",
+                                    lineHeight: "1.7",
+                                }}
+                            >
+                                Receive updates about upcoming Catholic events
+                                <br />
+                                and ministry activities.
+                            </p>
 
-      </div>
+                        </div>
 
-    </div>
+                    </div>
 
-    {/* Right */}
+                    {/* Right */}
 
-    <div
-      className="flex overflow-hidden rounded-xl bg-white border border-[#E8EDF5]"
-      style={{
-        width: "430px",
-        height: "52px",
-      }}
-    >
+                    <div
+                        className="flex overflow-hidden rounded-xl bg-white border border-[#E8EDF5]"
+                        style={{
+                            width: "430px",
+                            height: "52px",
+                        }}
+                    >
 
-      <input
-        type="email"
-        placeholder="Enter your email address"
-        className="flex-1 px-5 outline-none text-sm"
-        style={{
-          fontFamily: "'Inter', sans-serif",
-        }}
-      />
+                        <input
+                            type="email"
+                            placeholder="Enter your email address"
+                            className="flex-1 px-5 outline-none text-sm"
+                            style={{
+                                fontFamily: "'Inter', sans-serif",
+                            }}
+                        />
 
-      <button
-        className="px-8 font-semibold text-white transition"
-        style={{
-          background: "#F4A000",
-          fontFamily: "'Inter', sans-serif",
-        }}
-      >
-        Subscribe
-      </button>
+                        <button
+                            className="px-8 font-semibold text-white transition"
+                            style={{
+                                background: "#F4A000",
+                                fontFamily: "'Inter', sans-serif",
+                            }}
+                        >
+                            Subscribe
+                        </button>
 
-    </div>
+                    </div>
 
-  </div>
+                </div>
 
-</section>
+            </section>
         </div>
     );
 }

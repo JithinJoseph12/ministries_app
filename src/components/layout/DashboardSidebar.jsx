@@ -20,6 +20,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/src/components/providers/AuthProvider";
 
 const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -42,27 +43,50 @@ const navItems = [
         ]
     },
     { icon: Folder, label: "Public Resources", href: "/dashboard/resources" },
-    { icon: FolderLock, label: "Resource Center",
-         href: "/dashboard/internal-resources",
-                subItems: [
+    {
+        icon: FolderLock, label: "Resource Center",
+        href: "/dashboard/internal-resources",
+        subItems: [
             { label: "Leader Directory", href: "/dashboard/internal-resources/leader-directory" },
             { label: "Shared Resources", href: "/dashboard/internal-resources/shared-resources" },
             { label: "Internal Communications", href: "/dashboard/internal-resources/internal-communications" },
             { label: "Spiritual Library", href: "/dashboard/internal-resources/spiritual-library" },
-        ] },
+        ]
+    },
     { icon: Users, label: "Contacts", href: "/dashboard/contacts" },
     { icon: BookOpen, label: "Blog", href: "/dashboard/blog" },
+    {
+        icon: UserCog,
+        label: "Users",
+        href: "/dashboard/users",
+        subItems: [
+            { label: "All Users", href: "/dashboard/users" },
+            { label: "Add User", href: "/dashboard/users/add" },
+        ]
+    },
 ];
 
-// const bottomNavItems = [
-//     { icon: UserCog, label: "Users" },
-//     { icon: Settings, label: "Settings" },
-//     { icon: HelpCircle, label: "Help & Support" },
-// ];
+
 
 export default function DashboardSidebar() {
     const pathname = usePathname();
     const [openMenus, setOpenMenus] = useState({});
+    const { user } = useAuth();
+
+    const filteredNavItems = navItems.filter(item => {
+        if (item.label === "Users" && user?.role !== "superadmin") {
+            return false;
+        }
+        return true;
+    }).map(item => {
+        if (item.label === "Ministries" && user?.role === "admin") {
+            return {
+                ...item,
+                subItems: undefined
+            };
+        }
+        return item;
+    });
 
     return (
         <aside
@@ -110,7 +134,7 @@ export default function DashboardSidebar() {
 
             {/* Main nav */}
             <nav className="flex-1 overflow-y-auto flex flex-col gap-2.5 px-2 pt-1 mt-8 pb-4" style={{ scrollbarWidth: "none" }}>
-                {navItems.map((item) => {
+                {filteredNavItems.map((item) => {
                     const isActive =
                         item.href === "/dashboard"
                             ? pathname === "/dashboard"
@@ -140,7 +164,15 @@ export default function DashboardSidebar() {
                         <div key={item.label} className="flex flex-col">
                             {item.subItems ? (
                                 <button
-                                    onClick={() => setOpenMenus(prev => ({ ...prev, [item.label]: !isOpen }))}
+                                    onClick={() => {
+                                        const nextState = {};
+                                        filteredNavItems.forEach(nav => {
+                                            if (nav.subItems) {
+                                                nextState[nav.label] = nav.label === item.label ? !isOpen : false;
+                                            }
+                                        });
+                                        setOpenMenus(nextState);
+                                    }}
                                     className={`flex items-center gap-3.5 px-3 py-3.5 w-full text-left transition-all relative ${isActive ? "rounded-r-full" : ""
                                         }`}
                                     style={isActive ? activeStyle : defaultStyle}
@@ -173,53 +205,53 @@ export default function DashboardSidebar() {
                                 </Link>
                             )}
 
+                        
                             {/* Sub Items */}
-{/* Sub Items */}
-{item.subItems && isOpen && (
-  <div className="relative ml-6 mt-2 mb-2">
+                            {item.subItems && isOpen && (
+                                <div className="relative ml-6 mt-2 mb-2">
 
-    {/* Vertical Line */}
-    <div
-      className="absolute left-[6px] top-0 bottom-4 w-px"
-      style={{
-        background: "rgba(168,184,212,0.35)",
-      }}
-    />
+                                    {/* Vertical Line */}
+                                    <div
+                                        className="absolute left-[6px] top-0 bottom-4 w-px"
+                                        style={{
+                                            background: "rgba(168,184,212,0.35)",
+                                        }}
+                                    />
 
-    <div className="flex flex-col gap-1">
-      {item.subItems.map((subItem) => {
-        const isSubActive = pathname === subItem.href;
+                                    <div className="flex flex-col gap-1">
+                                        {item.subItems.map((subItem) => {
+                                            const isSubActive = pathname === subItem.href;
 
-        return (
-          <Link
-            key={subItem.label}
-            href={subItem.href}
-            className="relative flex items-center pl-7 pr-3 py-2.5"
-            style={{
-              color: isSubActive ? "#ffffff" : "#a8b8d4",
-              fontFamily: "'Inter', sans-serif",
-              fontSize: "15px",
-              fontWeight: isSubActive ? 600 : 500,
-            }}
-          >
-            {/* Connection Dot */}
-            <span
-              className="absolute left-0 w-3 h-3 rounded-full"
-              style={{
-                backgroundColor: isSubActive
-                  ? "#c9a553"
-                  : "#8AA1C8",
-                border: "2px solid #0d1b38",
-              }}
-            />
+                                            return (
+                                                <Link
+                                                    key={subItem.label}
+                                                    href={subItem.href}
+                                                    className="relative flex items-center pl-7 pr-3 py-2.5"
+                                                    style={{
+                                                        color: isSubActive ? "#ffffff" : "#a8b8d4",
+                                                        fontFamily: "'Inter', sans-serif",
+                                                        fontSize: "15px",
+                                                        fontWeight: isSubActive ? 600 : 500,
+                                                    }}
+                                                >
+                                                    {/* Connection Dot */}
+                                                    <span
+                                                        className="absolute left-0 w-3 h-3 rounded-full"
+                                                        style={{
+                                                            backgroundColor: isSubActive
+                                                                ? "#c9a553"
+                                                                : "#8AA1C8",
+                                                            border: "2px solid #0d1b38",
+                                                        }}
+                                                    />
 
-            {subItem.label}
-          </Link>
-        );
-      })}
-    </div>
-  </div>
-)}
+                                                    {subItem.label}
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     );
                 })}
@@ -227,23 +259,7 @@ export default function DashboardSidebar() {
                 {/* Spacer */}
                 <div className="flex-1" />
 
-                {/* Lower nav - commented out as in original */}
-                {/* {bottomNavItems.map((item) => (
-                    <button
-                        key={item.label}
-                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-md w-full text-left transition-all"
-                        style={{
-                            backgroundColor: "transparent",
-                            color: "#a8b8d4",
-                            fontFamily: "'Inter', sans-serif",
-                            fontSize: "14px",
-                            fontWeight: 700,
-                        }}
-                    >
-                        <item.icon size={15} style={{ flexShrink: 0 }} />
-                        <span>{item.label}</span>
-                    </button>
-                ))} */}
+
             </nav>
 
             {/* Bottom user area */}
@@ -256,9 +272,9 @@ export default function DashboardSidebar() {
                 <div className="flex items-center gap-2 mb-2">
                     <div
                         className="w-10 h-10 rounded-full flex items-center justify-center text-white text-base font-semibold flex-shrink-0"
-                        style={{ backgroundColor: "#1a3264" }}
+                        style={{ backgroundColor: "#1a3264", textTransform: "uppercase" }}
                     >
-                        U
+                        {user?.firstName?.charAt(0) || "U"}
                     </div>
                     <div className="min-w-0">
                         <p
@@ -273,7 +289,7 @@ export default function DashboardSidebar() {
                                 textOverflow: "ellipsis",
                             }}
                         >
-                            Upper Room Team
+                            {user?.firstName} {user?.lastName}
                         </p>
                         <p
                             style={{
@@ -281,9 +297,10 @@ export default function DashboardSidebar() {
                                 fontSize: "12px",
                                 fontFamily: "'Inter', sans-serif",
                                 lineHeight: "1.3",
+                                textTransform: "capitalize",
                             }}
                         >
-                            Super Admin
+                            {user?.role === "superadmin" ? "Super Admin" : "Admin"}
                         </p>
                     </div>
                 </div>

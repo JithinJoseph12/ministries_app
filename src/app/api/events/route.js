@@ -1,18 +1,32 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/src/lib/mongodb';
 import Event from '@/src/lib/models/Event';
+import { getUserFromToken } from '@/src/lib/auth';
 
 export async function POST(request) {
   try {
+    const user = await getUserFromToken();
+    if (!user) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
     await connectDB();
     
     const body = await request.json();
+
+    const ministryId = user.role === 'admin' ? user.ministryId : body.ministryId;
+
+    if (user.role !== 'superadmin' && !ministryId) {
+      return NextResponse.json({ success: false, message: 'Ministry ID is required' }, { status: 400 });
+    }
     
     // Create new event
     const newEvent = await Event.create({
       title: body.title,
       category: body.category,
       hostMinistry: body.hostMinistry,
+      ministryId: ministryId || null,
+      createdBy: user._id,
       shortDescription: body.shortDescription,
       description: body.description,
       startDate: body.startDate,
@@ -52,11 +66,23 @@ export async function POST(request) {
 
 export async function GET() {
   try {
+    const user = await getUserFromToken();
+    if (!user) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
     await connectDB();
     
-    // Fetch all events, sort by start date (newest first, or oldest first if preferred. Usually upcoming first, but we can do start date ascending or descending).
-    // Sorting by startDate descending is easy:
-    const events = await Event.find({}).sort({ startDate: -1 });
+    let query = {};
+    if (user.role === 'admin') {
+      if (!user.ministryId) {
+        return NextResponse.json({ success: true, count: 0, events: [] }, { status: 200 });
+      }
+      query = { ministryId: user.ministryId };
+    }
+
+    // Fetch events, sort by start date
+    const events = await Event.find(query).sort({ startDate: -1 });
     
     return NextResponse.json(
       { success: true, count: events.length, events },

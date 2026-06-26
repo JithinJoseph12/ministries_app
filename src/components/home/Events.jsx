@@ -1,48 +1,72 @@
-// components/sections/Events.jsx
+"use client";
+
+import { useMemo } from 'react';
+import { useEvents } from '@/src/hooks/useEvents';
 
 export default function Events() {
-  const eventList = [
-    {
-      id: 1,
-      month: "MAY",
-      day: "10",
-      tag: "PRO-LIFE",
-      tagClass: "prolife",
-      title: "40 Days For Life Prayer Vigil",
-      date: "May 10, 2026 • 9:00 AM",
-      location: "Philadelphia, PA"
-    },
-    {
-      id: 2,
-      month: "MAY",
-      day: "12",
-      tag: "YOUTH",
-      tagClass: "youth",
-      title: "High School Mission Night",
-      date: "May 12, 2026 • 7:00 PM",
-      location: "Norristown, PA"
-    },
-    {
-      id: 3,
-      month: "MAY",
-      day: "16",
-      tag: "FAMILY",
-      tagClass: "family",
-      title: "Family Rosary Evening",
-      date: "May 16, 2026 • 6:30 PM",
-      location: "Ambler, PA"
-    },
-    {
-      id: 4,
-      month: "MAY",
-      day: "18",
-      tag: "FORMATION",
-      tagClass: "outreach",
-      title: "Catholic Scripture Study",
-      date: "May 18, 2026 • 7:00 PM",
-      location: "Online"
+  const { events: allEvents, isLoading, getCalendarDays } = useEvents();
+
+  const { targetMonth, targetYear, monthName } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currMonth = today.getMonth();
+    const currYear = today.getFullYear();
+    
+    // Check if there are any upcoming events in the current month
+    const hasUpcomingThisMonth = allEvents.some(event => {
+       if (!event.startDate) return false;
+       const eventDate = new Date(event.startDate);
+       return eventDate >= today && eventDate.getMonth() === currMonth && eventDate.getFullYear() === currYear;
+    });
+
+    let tMonth = currMonth;
+    let tYear = currYear;
+
+    if (!hasUpcomingThisMonth && allEvents.length > 0) {
+        // Find if next month has events
+        tMonth = (currMonth + 1) % 12;
+        if (currMonth === 11) tYear = currYear + 1;
     }
-  ];
+
+    const mNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    return { targetMonth: tMonth, targetYear: tYear, monthName: mNames[tMonth] };
+  }, [allEvents]);
+
+  const calendarDates = useMemo(() => {
+      return getCalendarDays(targetYear, targetMonth, allEvents, 'dates');
+  }, [getCalendarDays, targetMonth, targetYear, allEvents]);
+
+  const eventList = useMemo(() => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return allEvents
+        .filter(event => {
+            if (!event.startDate) return false;
+            const ed = new Date(event.startDate);
+            return ed.getMonth() === targetMonth && ed.getFullYear() === targetYear && ed >= today;
+        })
+        .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+        .slice(0, 4)
+        .map(event => {
+            const ed = new Date(event.startDate);
+            let tagClass = "outreach";
+            const cat = event.category?.toLowerCase() || '';
+            if (cat.includes("pro-life") || cat.includes("family")) tagClass = "prolife";
+            else if (cat.includes("youth")) tagClass = "youth";
+            else if (cat.includes("formation") || cat.includes("evangelization")) tagClass = "family";
+            
+            return {
+                id: event.id,
+                month: monthName.substring(0, 3).toUpperCase(),
+                day: ed.getDate().toString().padStart(2, '0'),
+                tag: event.category ? event.category.toUpperCase() : "EVENT",
+                tagClass,
+                title: event.title,
+                date: `${monthName} ${ed.getDate()}, ${ed.getFullYear()} ${event.time ? '• ' + event.time : ''}`,
+                location: event.location
+            };
+        });
+  }, [allEvents, targetMonth, targetYear, monthName]);
 
   const tagStyles = {
     prolife: "bg-[#fff2dc] text-[#cb7c00]",
@@ -51,49 +75,7 @@ export default function Events() {
     outreach: "bg-[#e7efff] text-[#1956d7]"
   };
 
-  // Calendar data for May 2026
   const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-
-  // May 2026 starts on Friday (5/1/2026 is a Friday)
-  // Let's build the calendar dates
-  const getCalendarDates = () => {
-    const dates = [];
-    const firstDayOfMonth = new Date(2026, 4, 1); // May is month 4 (0-indexed)
-    const startingDayOfWeek = firstDayOfMonth.getDay(); // 5 = Friday
-
-    // Previous month days to fill start
-    const daysInPrevMonth = new Date(2026, 4, 0).getDate();
-    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-      dates.push({ day: daysInPrevMonth - i, currentMonth: false, events: [] });
-    }
-
-    // Current month days
-    const daysInMonth = new Date(2026, 5, 0).getDate();
-    for (let i = 1; i <= daysInMonth; i++) {
-      const events = [];
-      // Add events based on specific dates
-      if (i === 1) events.push({ name: "First Friday Adoration", type: "yellow" });
-      if (i === 6) events.push({ name: "Family Rosary Evening", type: "purple" });
-      if (i === 10) events.push({ name: "40 Days For Life Prayer Vigil", type: "yellow" });
-      if (i === 12) events.push({ name: "High School Mission Night", type: "green" });
-      if (i === 16) events.push({ name: "Marriage Enrichment Day", type: "purple" });
-      if (i === 20) events.push({ name: "Catholic Scripture Study", type: "blue" });
-      if (i === 22) events.push({ name: "College Bible Study", type: "green" });
-      if (i === 27) events.push({ name: "Healing Mass", type: "purple" });
-
-      dates.push({ day: i, currentMonth: true, events });
-    }
-
-    // Next month days to fill end (42 total - 6 rows of 7)
-    const remaining = 42 - dates.length;
-    for (let i = 1; i <= remaining; i++) {
-      dates.push({ day: i, currentMonth: false, events: [] });
-    }
-
-    return dates;
-  };
-
-  const calendarDates = getCalendarDates();
 
   const eventTypeStyles = {
     yellow: "bg-[#fff2cb]",
@@ -113,7 +95,7 @@ export default function Events() {
               UPCOMING EVENTS
             </small>
             <h2 className="text-[50px] font-['Cormorant_Garamond',serif] font-bold text-[#11295c]">
-              May 2026
+              {monthName} {targetYear}
             </h2>
           </div>
           <a href="/events" className="font-semibold text-[#0a4cdf] hover:underline">
@@ -152,7 +134,7 @@ export default function Events() {
           <div className="border border-[#e5eaf4] rounded-[22px] overflow-hidden">
             {/* Calendar Header */}
             <div className="p-[20px] bg-[#f7f9fd] flex justify-between items-center font-semibold text-[#11295c]">
-              <div>May 2026</div>
+              <div>{monthName} {targetYear}</div>
               <div className="flex gap-2">
                 <span className="cursor-pointer">Month</span> |
                 <span className="cursor-pointer">Week</span> |
@@ -180,14 +162,21 @@ export default function Events() {
                     }`}
                 >
                   <span className="font-medium">{date.day}</span>
-                  {date.events.map((event, eventIdx) => (
+                  {date.events.map((event, eventIdx) => {
+                    let type = "blue";
+                    const cat = event.category?.toLowerCase() || '';
+                    if (cat.includes("pro-life") || cat.includes("family")) type = "yellow";
+                    else if (cat.includes("youth")) type = "green";
+                    else if (cat.includes("formation") || cat.includes("evangelization")) type = "purple";
+                    
+                    return (
                     <div
                       key={eventIdx}
-                      className={`${eventTypeStyles[event.type]} p-[6px_8px] rounded-[8px] text-[11px] mt-[10px] font-medium text-gray-800`}
+                      className={`${eventTypeStyles[type]} p-[6px_8px] rounded-[8px] text-[11px] mt-[10px] font-medium text-gray-800`}
                     >
-                      {event.name}
+                      {event.title}
                     </div>
-                  ))}
+                  )})}
                 </div>
               ))}
             </div>

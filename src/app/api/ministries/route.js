@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/src/lib/mongodb';
 import Ministry from '@/src/lib/models/Ministry';
+import { getUserFromToken } from '@/src/lib/auth';
 
 export async function POST(request) {
   try {
+    const user = await getUserFromToken();
+    if (!user || user.role !== 'superadmin') {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
+    }
+
     await connectDB();
     
     const body = await request.json();
@@ -40,10 +46,24 @@ export async function POST(request) {
 
 export async function GET() {
   try {
+    const user = await getUserFromToken();
+    if (!user) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
     await connectDB();
     
-    // Fetch all ministries, sort by newest first
-    const ministries = await Ministry.find({}).sort({ createdAt: -1 });
+    let query = {};
+    if (user.role === 'admin') {
+      // Admin can only see their own ministry
+      if (!user.ministryId) {
+        return NextResponse.json({ success: true, count: 0, ministries: [] }, { status: 200 });
+      }
+      query = { _id: user.ministryId };
+    }
+
+    // Fetch ministries, sort by newest first
+    const ministries = await Ministry.find(query).sort({ createdAt: -1 });
     
     return NextResponse.json(
       { success: true, count: ministries.length, ministries },

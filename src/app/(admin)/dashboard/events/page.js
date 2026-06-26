@@ -1,43 +1,51 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Eye, 
-  Edit, 
-  ChevronLeft, 
-  ChevronRight,
-  Calendar as CalendarIcon,
-  List,
-  CheckCircle,
-  Clock,
-  MapPin,
-  Users,
-  Heart,
-  Cross,
-  Megaphone,
-  HandHeart,
-  Church,
-  TrendingUp,
-  AlertCircle,
-  Upload,
-  Download,
-  CalendarDays,
-  ArrowRight,
-  LayoutGrid,
-  Trash2,
-  MoreHorizontal
+import {
+    Plus,
+    Search,
+    Filter,
+    Eye,
+    Edit,
+    ChevronLeft,
+    ChevronRight,
+    Calendar as CalendarIcon,
+    List,
+    CheckCircle,
+    Clock,
+    MapPin,
+    Users,
+    Heart,
+    Cross,
+    Megaphone,
+    HandHeart,
+    Church,
+    TrendingUp,
+    AlertCircle,
+    Upload,
+    Download,
+    CalendarDays,
+    ArrowRight,
+    LayoutGrid,
+    Trash2,
+    MoreHorizontal,
+    ChevronDown,
+    X,
+    Target,
+    FileText,
+    Globe,
+    Mail,
+    Info
 } from 'lucide-react';
 import { GiDove } from "react-icons/gi";
 
 export default function EventsPage() {
     const router = useRouter();
+    const today = useMemo(() => new Date(), []);
     const [viewType, setViewType] = useState('calendar');
-    const [selectedMonth, setSelectedMonth] = useState(4); // May = 4
-    const [selectedYear, setSelectedYear] = useState(2026);
+    const [selectedMonth, setSelectedMonth] = useState(today.getMonth());
+    const [selectedYear, setSelectedYear] = useState(today.getFullYear());
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
     const [selectedMinistry, setSelectedMinistry] = useState('All Ministries');
@@ -48,10 +56,21 @@ export default function EventsPage() {
     const [events, setEvents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [itemToDelete, setItemToDelete] = useState(null);
+    const [selectedDateData, setSelectedDateData] = useState(null);
+    const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+    const [selectedEvent, setSelectedEvent] = useState(null);
 
     const handleDelete = (id) => {
         setItemToDelete(id);
     };
+
+    const handleDateClick = (day) => {
+        if (!day) return;
+        const clickedDate = new Date(selectedYear, selectedMonth, day.day);
+        setSelectedDateData({ date: clickedDate, dayData: day });
+        setIsDateModalOpen(true);
+    };
+
 
     const confirmDelete = async () => {
         if (!itemToDelete) return;
@@ -82,7 +101,7 @@ export default function EventsPage() {
                             const startD = new Date(e.startDate);
                             const startStr = startD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                             dateStr = startStr;
-                            
+
                             if (e.endDate && e.endDate !== e.startDate) {
                                 const endD = new Date(e.endDate);
                                 const endStr = endD.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -110,7 +129,8 @@ export default function EventsPage() {
                             location: e.city && e.state ? `${e.city}, ${e.state}` : e.venue || 'TBD',
                             category: e.category,
                             status: e.status || 'Published',
-                            icon: icon
+                            icon: icon,
+                            fullData: e
                         };
                     });
                     setEvents(mappedEvents);
@@ -132,8 +152,8 @@ export default function EventsPage() {
     const completedCount = events.filter(e => new Date(e.startDate) < new Date() && e.status === 'Published').length;
 
     const getStatusColor = (status) => {
-        return status === 'Published' 
-            ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
+        return status === 'Published'
+            ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
             : 'bg-amber-100 text-amber-700 border-amber-200';
     };
 
@@ -151,15 +171,15 @@ export default function EventsPage() {
 
     const filteredEvents = events.filter(event => {
         const searchLower = searchTerm.toLowerCase();
-        const matchesSearch = searchTerm === '' || 
-            event.title?.toLowerCase().includes(searchLower) || 
+        const matchesSearch = searchTerm === '' ||
+            event.title?.toLowerCase().includes(searchLower) ||
             event.ministry?.toLowerCase().includes(searchLower) ||
             event.location?.toLowerCase().includes(searchLower);
-            
+
         const matchesCategory = selectedCategory === 'All Categories' || event.category === selectedCategory;
         const matchesMinistry = selectedMinistry === 'All Ministries' || event.ministry === selectedMinistry;
         const matchesStatus = selectedStatus === 'All Status' || event.status === selectedStatus;
-        
+
         return matchesSearch && matchesCategory && matchesMinistry && matchesStatus;
     });
 
@@ -168,21 +188,63 @@ export default function EventsPage() {
         const firstDayOfMonth = new Date(selectedYear, selectedMonth, 1).getDay();
         const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
         const days = [];
-        
+
         for (let i = 0; i < firstDayOfMonth; i++) {
             days.push(null);
         }
-        
+
         for (let i = 1; i <= daysInMonth; i++) {
-            const hasEvent = filteredEvents.some(e => new Date(e.startDate).getDate() === i && 
-                                              new Date(e.startDate).getMonth() === selectedMonth);
-            days.push({ day: i, hasEvent });
+            const dayEvents = filteredEvents.filter(event => {
+
+                const eventDate = new Date(event.startDate);
+
+                return (
+                    eventDate.getDate() === i &&
+                    eventDate.getMonth() === selectedMonth &&
+                    eventDate.getFullYear() === selectedYear
+                );
+
+            });
+            days.push({
+
+                day: i,
+
+                hasEvent: dayEvents.length > 0,
+
+                events: dayEvents
+
+            });
         }
-        
+
         return days;
     };
 
-    const calendarDays = getCalendarDays();
+    const goToPreviousMonth = () => {
+        if (selectedMonth === 0) {
+            setSelectedMonth(11);
+            setSelectedYear(prev => prev - 1);
+        } else {
+            setSelectedMonth(prev => prev - 1);
+        }
+    };
+
+    const goToNextMonth = () => {
+        if (selectedMonth === 11) {
+            setSelectedMonth(0);
+            setSelectedYear(prev => prev + 1);
+        } else {
+            setSelectedMonth(prev => prev + 1);
+        }
+    };
+
+    const years = Array.from(
+        { length: 21 },
+        (_, i) => new Date().getFullYear() - 10 + i
+    );
+
+    const calendarDays = useMemo(() => {
+    return getCalendarDays();
+}, [filteredEvents, selectedMonth, selectedYear]);
     const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
     return (
@@ -203,7 +265,7 @@ export default function EventsPage() {
                                 Manage all ministry events, scheduling and publication status across Southeast Pennsylvania.
                             </p>
                         </div>
-                        <button 
+                        <button
                             onClick={() => router.push('/dashboard/events/add')}
                             className="bg-gradient-to-r from-[#082B63] to-[#1E4AA8] hover:from-[#0B3578] hover:to-[#2563B5] transition-all duration-300 text-white px-8 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl flex items-center gap-3 transform hover:-translate-y-0.5"
                         >
@@ -275,7 +337,7 @@ export default function EventsPage() {
                     <div className="grid lg:grid-cols-12 gap-4">
                         <div className="lg:col-span-4 relative">
                             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                            <input 
+                            <input
                                 type="text"
                                 placeholder="Search events by title, ministry, or location..."
                                 value={searchTerm}
@@ -284,7 +346,7 @@ export default function EventsPage() {
                             />
                         </div>
                         <div className="lg:col-span-2">
-                            <select 
+                            <select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
                                 className="w-full border border-slate-200 rounded-xl px-4 py-3.5 focus:outline-none focus:border-[#D6A646] bg-slate-50/50 text-slate-700 cursor-pointer transition-all"
@@ -299,7 +361,7 @@ export default function EventsPage() {
                             </select>
                         </div>
                         <div className="lg:col-span-2">
-                            <select 
+                            <select
                                 value={selectedMinistry}
                                 onChange={(e) => setSelectedMinistry(e.target.value)}
                                 className="w-full border border-slate-200 rounded-xl px-4 py-3.5 focus:outline-none focus:border-[#D6A646] bg-slate-50/50 text-slate-700 cursor-pointer transition-all"
@@ -312,7 +374,7 @@ export default function EventsPage() {
                             </select>
                         </div>
                         <div className="lg:col-span-2">
-                            <select 
+                            <select
                                 value={selectedStatus}
                                 onChange={(e) => setSelectedStatus(e.target.value)}
                                 className="w-full border border-slate-200 rounded-xl px-4 py-3.5 focus:outline-none focus:border-[#D6A646] bg-slate-50/50 text-slate-700 cursor-pointer transition-all"
@@ -323,24 +385,22 @@ export default function EventsPage() {
                             </select>
                         </div>
                         <div className="lg:col-span-2 flex gap-2">
-                            <button 
+                            <button
                                 onClick={() => setViewType('calendar')}
-                                className={`flex-1 rounded-xl py-3.5 font-semibold transition-all flex items-center justify-center gap-2 ${
-                                    viewType === 'calendar' 
-                                        ? 'bg-gradient-to-r from-[#082B63] to-[#1E4AA8] text-white shadow-md' 
-                                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                                }`}
+                                className={`flex-1 rounded-xl py-3.5 font-semibold transition-all flex items-center justify-center gap-2 ${viewType === 'calendar'
+                                    ? 'bg-gradient-to-r from-[#082B63] to-[#1E4AA8] text-white shadow-md'
+                                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                                    }`}
                             >
                                 <CalendarIcon size={18} />
                                 Calendar
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setViewType('list')}
-                                className={`flex-1 rounded-xl py-3.5 font-semibold transition-all flex items-center justify-center gap-2 ${
-                                    viewType === 'list' 
-                                        ? 'bg-gradient-to-r from-[#082B63] to-[#1E4AA8] text-white shadow-md' 
-                                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                                }`}
+                                className={`flex-1 rounded-xl py-3.5 font-semibold transition-all flex items-center justify-center gap-2 ${viewType === 'list'
+                                    ? 'bg-gradient-to-r from-[#082B63] to-[#1E4AA8] text-white shadow-md'
+                                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                                    }`}
                             >
                                 <List size={18} />
                                 List
@@ -357,18 +417,59 @@ export default function EventsPage() {
                             <div className="bg-white border border-slate-200 rounded-2xl shadow-lg p-6">
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                                        <CalendarIcon size={24} className="text-[#082B63]" />
-                                        {monthNames[selectedMonth]} {selectedYear}
+                                        <div className="w-11 h-11 rounded-xl bg-[#082B63]/10 border border-[#082B63]/10 flex items-center justify-center shadow-sm">
+                                            <CalendarIcon size={22} className="text-[#082B63]" />
+                                        </div>                                        <div className="flex items-center gap-3">
+                                            {/* Month */}
+                                            <div className="relative">
+                                                <select
+                                                    value={selectedMonth}
+                                                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                                                    className="appearance-none h-11 min-w-[170px] rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-[#082B63]/30 focus:outline-none focus:ring-2 focus:ring-[#082B63]/15 focus:border-[#082B63] cursor-pointer"
+                                                >
+                                                    {monthNames.map((month, index) => (
+                                                        <option key={month} value={index}>
+                                                            {month}
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                <ChevronDown
+                                                    size={18}
+                                                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                                />
+                                            </div>
+
+                                            {/* Year */}
+                                            <div className="relative">
+                                                <select
+                                                    value={selectedYear}
+                                                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                                    className="appearance-none h-11 w-28 rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-[#082B63]/30 focus:outline-none focus:ring-2 focus:ring-[#082B63]/15 focus:border-[#082B63] cursor-pointer"
+                                                >
+                                                    {years.map((year) => (
+                                                        <option key={year} value={year}>
+                                                            {year}
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                <ChevronDown
+                                                    size={18}
+                                                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                                />
+                                            </div>
+                                        </div>                                   
                                     </h2>
                                     <div className="flex gap-2">
-                                        <button 
-                                            onClick={() => setSelectedMonth(prev => prev === 0 ? 11 : prev - 1)}
+                                        <button
+                                            onClick={goToPreviousMonth}
                                             className="p-2 rounded-lg hover:bg-slate-100 transition"
                                         >
                                             <ChevronLeft size={20} />
                                         </button>
-                                        <button 
-                                            onClick={() => setSelectedMonth(prev => prev === 11 ? 0 : prev + 1)}
+                                        <button
+                                            onClick={goToNextMonth}
                                             className="p-2 rounded-lg hover:bg-slate-100 transition"
                                         >
                                             <ChevronRight size={20} />
@@ -386,31 +487,59 @@ export default function EventsPage() {
                                 </div>
 
                                 <div className="grid grid-cols-7 gap-2">
-                                    {calendarDays.map((day, idx) => (
-                                        <div
-                                            key={idx}
-                                            className={`border rounded-xl min-h-[100px] p-2 transition-all ${
-                                                day?.hasEvent 
-                                                    ? 'border-[#D6A646]/40 bg-amber-50/30 hover:shadow-md' 
-                                                    : 'border-slate-200 bg-white hover:bg-slate-50'
-                                            }`}
-                                        >
-                                            {day && (
-                                                <>
-                                                    <span className={`text-sm font-semibold ${
-                                                        day.hasEvent ? 'text-[#D6A646]' : 'text-slate-600'
-                                                    }`}>
-                                                        {day.day}
-                                                    </span>
-                                                    {day.hasEvent && (
-                                                        <div className="mt-1">
-                                                            <div className="w-2 h-2 bg-[#D6A646] rounded-full"></div>
-                                                        </div>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    ))}
+                                    {calendarDays.map((day, idx) => {
+                                        const isToday =
+                                            day &&
+                                            day.day === today.getDate() &&
+                                            selectedMonth === today.getMonth() &&
+                                            selectedYear === today.getFullYear();
+                                        return (
+                                            <div
+                                                key={idx}
+                                                onClick={() => handleDateClick(day)}
+                                                className={`border rounded-xl min-h-[100px] p-2 transition-all cursor-pointer flex flex-col
+                                        ${isToday
+                                                        ? "border-[#082B63]/30 bg-[#082B63]/10"
+                                                        : day?.hasEvent
+                                                            ? "border-[#D6A646]/40 bg-amber-50/30 hover:shadow-md"
+                                                            : "border-slate-200 bg-white hover:bg-slate-50"
+                                                    }`}
+                                            >
+                                                {day && (
+                                                    <>
+                                                        <span
+                                                            className={`text-sm font-semibold mb-1 ${isToday
+                                                                ? "text-[#082B63]"
+                                                                : day.hasEvent
+                                                                    ? "text-[#D6A646]"
+                                                                    : "text-slate-600"
+                                                                }`}
+                                                        >
+                                                            {day.day}
+                                                        </span>
+                                                        {day.hasEvent && (
+                                                            <div className="mt-1 space-y-1 flex-1 overflow-hidden">
+                                                                {day.events.slice(0, 2).map((evt, eIdx) => (
+                                                                    <div key={eIdx} className="bg-white/60 border border-[#D6A646]/30 rounded-md p-1.5 text-left hover:bg-white/80 transition-colors">
+                                                                        <div className="text-xs font-bold text-slate-800 truncate" title={evt.title}>{evt.title}</div>
+                                                                        <div className="text-[10px] text-slate-500 truncate flex items-center gap-0.5 mt-0.5">
+                                                                            <MapPin size={8} /> 
+                                                                            <span className="truncate">{evt.location}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                                {day.events.length > 2 && (
+                                                                    <div className="text-[10px] font-semibold text-[#D6A646] text-left pl-1">
+                                                                        +{day.events.length - 2} more
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
                                 </div>
 
                                 {/* Legend */}
@@ -487,13 +616,19 @@ export default function EventsPage() {
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
                                                         <div className="flex justify-end gap-2">
-                                                            <button className="border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-all font-medium text-sm flex items-center gap-1">
+                                                            <button 
+                                                                onClick={() => setSelectedEvent(event.fullData)}
+                                                                className="border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-all font-medium text-sm flex items-center gap-1"
+                                                            >
                                                                 <Eye size={14} /> View
                                                             </button>
-                                                            <button className="bg-[#082B63] hover:bg-[#0B3578] transition-all text-white px-3 py-1.5 rounded-lg font-medium text-sm flex items-center gap-1 shadow-sm">
+                                                            <button 
+                                                                onClick={() => router.push(`/dashboard/events/add?editId=${event.id}`)}
+                                                                className="bg-[#082B63] hover:bg-[#0B3578] transition-all text-white px-3 py-1.5 rounded-lg font-medium text-sm flex items-center gap-1 shadow-sm"
+                                                            >
                                                                 <Edit size={14} /> Edit
                                                             </button>
-                                                            <button 
+                                                            <button
                                                                 onClick={() => handleDelete(event.id)}
                                                                 className="border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all font-medium text-sm flex items-center gap-1"
                                                             >
@@ -561,7 +696,7 @@ export default function EventsPage() {
                                 Quick Actions
                             </h3>
                             <div className="grid grid-cols-2 gap-3">
-                                <button 
+                                <button
                                     onClick={() => router.push('/dashboard/events/add')}
                                     className="col-span-2 w-full bg-gradient-to-r from-[#082B63] to-[#1E4AA8] hover:from-[#0B3578] hover:to-[#2563B5] transition-all text-white rounded-xl py-3.5 font-semibold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                                 >
@@ -639,6 +774,85 @@ export default function EventsPage() {
                 </div>
             </div>
 
+            {/* Date Details Modal */}
+            {isDateModalOpen && selectedDateData && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <CalendarIcon className="text-[#082B63]" size={24} />
+                                {selectedDateData.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                            </h3>
+                            <button onClick={() => setIsDateModalOpen(false)} className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-xl transition-all">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto">
+                            {selectedDateData.dayData.hasEvent ? (
+                                <div className="space-y-4">
+                                    {selectedDateData.dayData.events.map(evt => (
+                                        <div key={evt.id} className="border border-slate-100 rounded-xl p-4 bg-slate-50 hover:bg-slate-100/50 transition-colors">
+                                            <div className="flex items-start gap-3">
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${evt.category === 'Faith Formation' ? 'bg-purple-100' : 'bg-white border border-slate-200'}`}>
+                                                    {evt.icon}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-start">
+                                                        <h4 className="font-bold text-lg text-slate-900">{evt.title}</h4>
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${getStatusColor(evt.status)} border`}>
+                                                            {evt.status}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-2 space-y-1.5">
+                                                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                            <MapPin size={14} className="text-slate-400" /> {evt.location}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                            <Users size={14} className="text-slate-400" /> {evt.ministry}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 mt-2">
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold ${getCategoryColor(evt.category)} border`}>
+                                                                {evt.category}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-3">
+                                                <button 
+                                                    onClick={() => setSelectedEvent(evt.fullData)}
+                                                    className="px-3 py-1.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors flex items-center gap-1.5"
+                                                >
+                                                    <Eye size={14} /> View Details
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-10">
+                                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                        <CalendarDays size={32} className="text-slate-400" />
+                                    </div>
+                                    <h4 className="text-lg font-bold text-slate-900 mb-2">No Events Scheduled</h4>
+                                    <p className="text-slate-500 mb-6 max-w-sm mx-auto">There are currently no events scheduled for this day. Would you like to create one?</p>
+                                    <button 
+                                        onClick={() => {
+                                            const d = selectedDateData.date;
+                                            const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                            router.push(`/dashboard/events/add?date=${localDateStr}`);
+                                        }}
+                                        className="inline-flex items-center gap-2 bg-gradient-to-r from-[#082B63] to-[#1E4AA8] hover:from-[#0B3578] hover:to-[#2563B5] text-white px-6 py-3 rounded-xl font-semibold shadow-md transition-all transform hover:-translate-y-0.5"
+                                    >
+                                        <Plus size={18} /> Add New Event
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Delete Confirmation Modal */}
             {itemToDelete && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
@@ -651,18 +865,204 @@ export default function EventsPage() {
                         </div>
                         <p className="text-slate-600 mb-6">Are you sure you want to delete this event? This action cannot be undone.</p>
                         <div className="flex gap-3 justify-end">
-                            <button 
+                            <button
                                 onClick={() => setItemToDelete(null)}
                                 className="px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold transition-colors"
                             >
                                 Cancel
                             </button>
-                            <button 
+                            <button
                                 onClick={confirmDelete}
                                 className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-xl font-semibold transition-colors"
                             >
                                 Yes, Delete
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* View Details Modal */}
+            {selectedEvent && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 sm:p-6 overflow-y-auto">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-slate-200 relative animate-in fade-in zoom-in-95 duration-200 my-auto">
+                        {/* Header Image / Pattern Area */}
+                        <div className="h-32 bg-gradient-to-r from-[#082B63] to-[#1E4AA8] rounded-t-3xl relative overflow-hidden">
+                            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
+                            <button 
+                                onClick={() => setSelectedEvent(null)}
+                                className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full backdrop-blur-sm transition-all"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="px-6 sm:px-8 pb-8">
+                            {/* Profile Header */}
+                            <div className="relative -mt-12 sm:-mt-16 mb-8 flex flex-col sm:flex-row items-start sm:items-end gap-5">
+                                <div className="bg-white p-2 rounded-2xl shadow-lg border border-slate-100">
+                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                        <CalendarIcon size={40} />
+                                    </div>
+                                </div>
+                                <div className="flex-1 pb-1">
+                                    <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3 sm:mb-6">{selectedEvent.title}</h2>
+
+                                    <div className="flex flex-wrap items-center gap-3 ">
+                                        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase">
+                                            {selectedEvent.category || 'Event'}
+                                        </span>
+                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedEvent.status || 'Published')} border`}>
+                                            {(!selectedEvent.status || selectedEvent.status === 'Published') ? <CheckCircle size={12} /> : <Clock size={12} />}
+                                            {selectedEvent.status || 'Published'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="pb-1 flex gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+                                    <button 
+                                        onClick={() => {
+                                            setSelectedEvent(null);
+                                            router.push(`/dashboard/events/add?editId=${selectedEvent._id}`);
+                                        }}
+                                        className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm flex justify-center items-center gap-2 transition-all"
+                                    >
+                                        <Edit size={16} /> Edit
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid lg:grid-cols-3 gap-8">
+                                {/* Left Column - Main Info */}
+                                <div className="lg:col-span-2 space-y-8">
+                                    {/* Short Description */}
+                                    <section>
+                                        <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                            <Target size={20} className="text-[#D6A646]" />
+                                            Summary
+                                        </h3>
+                                        <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 text-slate-700 leading-relaxed italic">
+                                            "{selectedEvent.shortDescription || 'No summary provided.'}"
+                                        </div>
+                                    </section>
+
+                                    {/* Description */}
+                                    <section>
+                                        <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                            <FileText size={20} className="text-[#082B63]" />
+                                            Event Details
+                                        </h3>
+                                        <div className="text-slate-600 leading-relaxed whitespace-pre-wrap">
+                                            {selectedEvent.description || 'No detailed description provided.'}
+                                        </div>
+                                    </section>
+
+                                    {/* Additional Details */}
+                                    <div className="grid sm:grid-cols-2 gap-6">
+                                        <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                            <h4 className="font-bold text-slate-900 mb-2">Location / Venue</h4>
+                                            <p className="text-sm text-slate-600">
+                                                {selectedEvent.venue && <span className="block font-semibold">{selectedEvent.venue}</span>}
+                                                {selectedEvent.address && <span className="block">{selectedEvent.address}</span>}
+                                                {selectedEvent.city && selectedEvent.state && <span className="block">{selectedEvent.city}, {selectedEvent.state} {selectedEvent.zip}</span>}
+                                                {!selectedEvent.venue && !selectedEvent.address && !selectedEvent.city && 'No location provided.'}
+                                            </p>
+                                        </section>
+                                        <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                            <h4 className="font-bold text-slate-900 mb-2">Registration</h4>
+                                            <p className="text-sm text-slate-600 mb-2">
+                                                {selectedEvent.allowRegistration ? 'Registration is open.' : 'No registration required.'}
+                                            </p>
+                                            {selectedEvent.registrationLink && (
+                                                <a href={selectedEvent.registrationLink} target="_blank" rel="noreferrer" className="text-[#D6A646] hover:text-[#082B63] font-semibold text-sm transition-colors flex items-center gap-1">
+                                                    Register Here <ArrowRight size={14} />
+                                                </a>
+                                            )}
+                                        </section>
+                                    </div>
+                                </div>
+
+                                {/* Right Column - Quick Facts & Contact */}
+                                <div className="space-y-6">
+                                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 shadow-sm">
+                                        <h3 className="text-base font-bold text-slate-900 mb-5 flex items-center gap-2 border-b border-slate-200 pb-3">
+                                            <Info size={18} className="text-[#082B63]" />
+                                            Quick Facts
+                                        </h3>
+                                        
+                                        <div className="space-y-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                                                    <CalendarIcon size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-slate-500 font-medium">Date & Time</p>
+                                                    <p className="text-sm font-semibold text-slate-900">
+                                                        {selectedEvent.startDate ? new Date(selectedEvent.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD'}
+                                                        {selectedEvent.startTime && ` at ${selectedEvent.startTime}`}
+                                                    </p>
+                                                    {(selectedEvent.endDate || selectedEvent.endTime) && (
+                                                        <p className="text-xs text-slate-500 mt-1">
+                                                            To: {selectedEvent.endDate ? new Date(selectedEvent.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} {selectedEvent.endTime && selectedEvent.endTime}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                                    <Church size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-slate-500 font-medium">Host Ministry</p>
+                                                    <p className="text-sm font-semibold text-slate-900">{selectedEvent.hostMinistry || 'Unassigned'}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                                                    <MapPin size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-slate-500 font-medium">Location</p>
+                                                    <p className="text-sm font-semibold text-slate-900">{selectedEvent.venue || selectedEvent.city || 'Not specified'}</p>
+                                                    {selectedEvent.mapUrl && (
+                                                        <a href={selectedEvent.mapUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline mt-1 inline-block">
+                                                            View on Maps
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-[#082B63] rounded-2xl p-6 shadow-md text-white">
+                                        <h3 className="text-base font-bold mb-5 flex items-center gap-2 border-b border-white/20 pb-3">
+                                            <Mail size={18} className="text-[#D6A646]" />
+                                            Contact Info
+                                        </h3>
+                                        
+                                        <div className="space-y-4">
+                                            <p className="text-sm font-semibold text-white mb-2">{selectedEvent.contactPerson || 'General Contact'}</p>
+                                            {selectedEvent.contactEmail && (
+                                                <a href={`mailto:${selectedEvent.contactEmail}`} className="flex items-center gap-3 text-sm text-blue-100 hover:text-white transition-colors">
+                                                    <Mail size={16} className="text-blue-300 shrink-0" />
+                                                    <span className="break-all">{selectedEvent.contactEmail}</span>
+                                                </a>
+                                            )}
+                                            {selectedEvent.contactPhone && (
+                                                <div className="flex items-center gap-3 text-sm text-blue-100">
+                                                    <Globe size={16} className="text-blue-300 shrink-0" />
+                                                    <span>{selectedEvent.contactPhone}</span>
+                                                </div>
+                                            )}
+                                            {!selectedEvent.contactEmail && !selectedEvent.contactPhone && (
+                                                <p className="text-sm text-blue-200">No contact information available.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

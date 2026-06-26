@@ -3,7 +3,19 @@ import mongoose from 'mongoose';
 const EventSchema = new mongoose.Schema({
   title: { type: String, required: true },
   category: { type: String, required: true },
-  hostMinistry: { type: String },
+      // Ministry that owns this event
+  ministryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Ministry",
+      required: false,
+      index: true,
+    },
+    // User who created the event
+  createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   shortDescription: { type: String },
   description: { type: String },
   startDate: { type: String, required: true },
@@ -22,8 +34,16 @@ const EventSchema = new mongoose.Schema({
   contactPhone: { type: String },
   registrationLink: { type: String },
   registrationUrl: { type: String },
-  status: { type: String, default: 'Published' },
-  visibility: { type: String, default: 'Public' },
+  status: {
+    type: String,
+    enum: ["Draft", "Published", "Cancelled"],
+    default: "Published",
+  },
+  visibility: {
+    type: String,
+    enum: ["Public", "Private"],
+    default: "Public",
+  },
   featured: { type: Boolean, default: false },
   allowRegistration: { type: Boolean, default: true },
 }, { timestamps: true });

@@ -1,14 +1,16 @@
 "use client";
 
 import { AlignCenter, AlignLeft, AlignRight, Bold, CalendarClock, CalendarDays, Check, ChevronDown, FileText, ImagePlus, Italic, Lightbulb, List, ListOrdered, MapPin, Redo2, Underline, Undo2 } from "lucide-react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/src/components/providers/AuthProvider";
 
-export default function AddEventPage() {
+function EventFormContent() {
   const [eventData, setEventData] = useState({
     title: "",
     category: "",
     hostMinistry: "",
+    ministryId: "",
     shortDescription: "",
     description: "",
     startDate: "",
@@ -37,7 +39,87 @@ export default function AddEventPage() {
   const [charCount, setCharCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-const router = useRouter();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefilledDate = searchParams.get('date');
+  const editId = searchParams.get('editId');
+  const isEditing = !!editId;
+  const [isLoading, setIsLoading] = useState(isEditing);
+  const { user } = useAuth();
+  const [ministries, setMinistries] = useState([]);
+
+  useEffect(() => {
+    if (user?.role === 'superadmin') {
+      const fetchMinistries = async () => {
+        try {
+          const res = await fetch('/api/ministries');
+          const data = await res.json();
+          if (data.success) {
+            setMinistries(data.ministries);
+          }
+        } catch (err) {
+          console.error("Error fetching ministries:", err);
+        }
+      };
+      fetchMinistries();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (prefilledDate && !isEditing) {
+      setEventData(prev => ({ ...prev, startDate: prefilledDate }));
+    }
+  }, [prefilledDate, isEditing]);
+
+  useEffect(() => {
+    if (isEditing && editId) {
+      const fetchEvent = async () => {
+        try {
+          const res = await fetch(`/api/events/${editId}`);
+          const data = await res.json();
+          if (data.success) {
+            const e = data.event;
+            setEventData({
+              title: e.title || "",
+              category: e.category || "",
+              hostMinistry: e.hostMinistry || "",
+              ministryId: e.ministryId || "",
+              shortDescription: e.shortDescription || "",
+              description: e.description || "",
+              startDate: e.startDate || "",
+              startTime: e.startTime || "",
+              endDate: e.endDate || "",
+              endTime: e.endTime || "",
+              allDay: e.allDay || false,
+              venue: e.venue || "",
+              address: e.address || "",
+              city: e.city || "",
+              state: e.state || "",
+              zip: e.zip || "",
+              mapUrl: e.mapUrl || "",
+              registrationLink: e.registrationLink || "",
+              contactPerson: e.contactPerson || "",
+              contactEmail: e.contactEmail || "",
+              contactPhone: e.contactPhone || "",
+              status: e.status || "Published",
+              visibility: e.visibility || "Public",
+              featured: e.featured || false,
+              allowRegistration: e.allowRegistration !== undefined ? e.allowRegistration : true,
+              registrationUrl: e.registrationUrl || "",
+            });
+            if (e.description) {
+              setCharCount(e.description.length);
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching event:", err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchEvent();
+    }
+  }, [isEditing, editId]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -63,8 +145,10 @@ const router = useRouter();
     if (action === "publish") {
       try {
         setIsSubmitting(true);
-        const response = await fetch("/api/events", {
-          method: "POST",
+        const url = isEditing ? `/api/events/${editId}` : "/api/events";
+        const method = isEditing ? "PATCH" : "POST";
+        const response = await fetch(url, {
+          method: method,
           headers: {
             "Content-Type": "application/json",
           },
@@ -82,11 +166,11 @@ const router = useRouter();
           // Optionally reset form:
           // setEventData({ ...initialState });
         } else {
-          alert(`Error: ${data.message || "Failed to publish event"}`);
+          alert(`Error: ${data.message || (isEditing ? "Failed to update event" : "Failed to publish event")}`);
         }
       } catch (error) {
         console.error("Submit error:", error);
-        alert("An error occurred while publishing the event.");
+        alert(`An error occurred while ${isEditing ? "updating" : "publishing"} the event.`);
       } finally {
         setIsSubmitting(false);
       }
@@ -95,6 +179,10 @@ const router = useRouter();
       alert(`Event saved as draft successfully!`);
     }
   };
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-white relative">
@@ -107,8 +195,8 @@ const router = useRouter();
           <Check className="w-5 h-5 text-emerald-600" />
         </div>
         <div>
-          <h4 className="font-semibold text-emerald-900">Successfully Added</h4>
-          <p className="text-sm text-emerald-700">The event has been published.</p>
+          <h4 className="font-semibold text-emerald-900">{isEditing ? "Successfully Updated" : "Successfully Added"}</h4>
+          <p className="text-sm text-emerald-700">The event has been {isEditing ? "updated" : "published"}.</p>
         </div>
       </div>
 
@@ -116,9 +204,9 @@ const router = useRouter();
         <div className="p-8 max-w-[1400px] mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <div className="text-sm text-gray-500 mb-1">Events / Add New Event</div>
-            <h1 className="text-3xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#1e3a8a" }}>Add New Event</h1>
-            <p className="text-gray-500 mt-1">Fill in the details below to create a new event.</p>
+            <div className="text-sm text-gray-500 mb-1">Events / {isEditing ? "Edit Event" : "Add New Event"}</div>
+            <h1 className="text-3xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: "#1e3a8a" }}>{isEditing ? "Edit Event" : "Add New Event"}</h1>
+            <p className="text-gray-500 mt-1">{isEditing ? "Update the details below to edit the event." : "Fill in the details below to create a new event."}</p>
           </div>
 
           <form onSubmit={(e) => handleSubmit(e, "publish")}>
@@ -178,23 +266,44 @@ const router = useRouter();
                           <option>Community Outreach</option>
                         </select>
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Host Ministry</label>
-                        <select
-                          name="hostMinistry"
-                          value={eventData.hostMinistry}
-                          onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                        >
-                          <option value="">Select ministry</option>
-                          <option value="A Baby's Breath">A Baby's Breath</option>
-                          <option value="House of God's Light">House of God's Light</option>
-                          <option value="Life Runners">Life Runners</option>
-                          <option value="Gianna Center">Gianna Center</option>
-                          <option value="Militia of Immaculata">Militia of Immaculata</option>
-                          <option value="Society of St. Vincent">Society of St. Vincent</option>
-                        </select>
-                      </div>
+                      {user?.role === 'superadmin' ? (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Ministry <span className="text-red-500">*</span></label>
+                          <select
+                            name="ministryId"
+                            value={eventData.ministryId}
+                            onChange={(e) => {
+                                const selectedId = e.target.value;
+                                const selectedName = ministries.find(m => m._id === selectedId)?.name || '';
+                                setEventData(prev => ({ ...prev, ministryId: selectedId, hostMinistry: selectedName }));
+                            }}
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          >
+                            <option value="">Select ministry</option>
+                            {ministries.map(m => (
+                              <option key={m._id} value={m._id}>{m.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Host Ministry</label>
+                          <select
+                            name="hostMinistry"
+                            value={eventData.hostMinistry}
+                            onChange={handleChange}
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          >
+                            <option value="">Select ministry</option>
+                            <option value="A Baby's Breath">A Baby's Breath</option>
+                            <option value="House of God's Light">House of God's Light</option>
+                            <option value="Life Runners">Life Runners</option>
+                            <option value="Gianna Center">Gianna Center</option>
+                            <option value="Militia of Immaculata">Militia of Immaculata</option>
+                            <option value="Society of St. Vincent">Society of St. Vincent</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Short Description</label>
@@ -331,7 +440,8 @@ const router = useRouter();
                         type="date"
                         value={eventData.startDate}
                         onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        disabled={!!prefilledDate}
+                        className={`w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none ${prefilledDate ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'focus:ring-2 focus:ring-blue-500'}`}
                       />
                     </div>
                     <div>
@@ -613,7 +723,7 @@ const router = useRouter();
                     disabled={isSubmitting}
                     className="px-6 py-2.5 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 transition shadow-sm disabled:bg-blue-400"
                   >
-                    {isSubmitting ? "Publishing..." : "Publish Event"}
+                    {isSubmitting ? (isEditing ? "Updating..." : "Publishing...") : (isEditing ? "Update Event" : "Publish Event")}
                   </button>
                 </div>
               </div>
@@ -877,5 +987,13 @@ const router = useRouter();
         </div>
       </main>
     </div>
+  );
+}
+
+export default function AddEventPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>}>
+      <EventFormContent />
+    </Suspense>
   );
 }

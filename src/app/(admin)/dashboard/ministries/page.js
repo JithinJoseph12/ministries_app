@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/src/components/providers/AuthProvider';
 import { 
   Plus, 
   Search, 
@@ -27,12 +28,19 @@ import {
   User,
   TrendingUp,
   ArrowRight,
-  Trash2
+  Trash2,
+  X,
+  Mail,
+  Globe,
+  Target,
+  FileText,
+  Info
 } from 'lucide-react';
 import { GiDove } from "react-icons/gi";
 
 export default function MinistriesPage() {
     const router = useRouter();
+    const { user } = useAuth();
     const [viewMode, setViewMode] = useState('table');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -40,6 +48,7 @@ export default function MinistriesPage() {
     const [ministries, setMinistries] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [itemToDelete, setItemToDelete] = useState(null);
+    const [selectedMinistry, setSelectedMinistry] = useState(null);
 
     const getCategoryIcon = (category, size = 14) => {
         if (!category) return <Church size={size} />;
@@ -109,7 +118,8 @@ export default function MinistriesPage() {
                             status: m.status || 'Active',
                             iconBg: style.bg,
                             iconColor: style.text,
-                            icon: getCategoryIcon(m.category, 24)
+                            icon: getCategoryIcon(m.category, 24),
+                            fullData: m
                         };
                     });
                     setMinistries(mappedMinistries);
@@ -162,13 +172,15 @@ export default function MinistriesPage() {
                                 Manage ministry profiles, contacts, and participation status across Southeast Pennsylvania.
                             </p>
                         </div>
-                        <button 
-                            onClick={() => router.push('/dashboard/ministries/add')}
-                            className="bg-gradient-to-r from-[#082B63] to-[#1E4AA8] hover:from-[#0B3578] hover:to-[#2563B5] transition-all duration-300 text-white px-8 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl flex items-center gap-3 transform hover:-translate-y-0.5"
-                        >
-                            <Plus size={20} />
-                            Add New Ministry
-                        </button>
+                        {user?.role === 'superadmin' && (
+                            <button 
+                                onClick={() => router.push('/dashboard/ministries/add')}
+                                className="bg-gradient-to-r from-[#082B63] to-[#1E4AA8] hover:from-[#0B3578] hover:to-[#2563B5] transition-all duration-300 text-white px-8 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl flex items-center gap-3 transform hover:-translate-y-0.5"
+                            >
+                                <Plus size={20} />
+                                Add New Ministry
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -373,18 +385,26 @@ export default function MinistriesPage() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <button className="border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-all font-medium text-sm flex items-center gap-1">
+                                                    <button 
+                                                        onClick={() => setSelectedMinistry(ministry.fullData)}
+                                                        className="border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-all font-medium text-sm flex items-center gap-1"
+                                                    >
                                                         <Eye size={14} /> View
                                                     </button>
-                                                    <button className="bg-[#082B63] hover:bg-[#0B3578] transition-all text-white px-3 py-1.5 rounded-lg font-medium text-sm flex items-center gap-1 shadow-sm">
+                                                    <button 
+                                                        onClick={() => router.push(`/dashboard/ministries/add?editId=${ministry.id}`)}
+                                                        className="bg-[#082B63] hover:bg-[#0B3578] transition-all text-white px-3 py-1.5 rounded-lg font-medium text-sm flex items-center gap-1 shadow-sm"
+                                                    >
                                                         <Edit size={14} /> Edit
                                                     </button>
-                                                    <button 
-                                                        onClick={() => handleDelete(ministry.id)}
-                                                        className="border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all font-medium text-sm flex items-center gap-1"
-                                                    >
-                                                        <Trash2 size={14} /> 
-                                                    </button>
+                                                    {user?.role === 'superadmin' && (
+                                                        <button 
+                                                            onClick={() => handleDelete(ministry.id)}
+                                                            className="border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all font-medium text-sm flex items-center gap-1"
+                                                        >
+                                                            <Trash2 size={14} /> 
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -427,17 +447,29 @@ export default function MinistriesPage() {
                                             <User size={14} className="text-slate-400" />
                                             <span className="text-sm text-slate-600">{ministry.leader}</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-4">
                                             <button 
-                                                onClick={() => handleDelete(ministry.id)}
-                                                className="text-red-500 hover:text-red-700 transition-colors p-1"
-                                                title="Delete Ministry"
+                                                onClick={() => router.push(`/dashboard/ministries/add?editId=${ministry.id}`)}
+                                                className="text-[#082B63] font-semibold text-sm hover:gap-2 transition-all inline-flex items-center gap-1 group-hover:gap-2"
                                             >
-                                                <Trash2 size={16} />
+                                                <Edit size={16} /> 
                                             </button>
-                                            <button className="text-[#082B63] font-semibold text-sm hover:gap-2 transition-all inline-flex items-center gap-1 group-hover:gap-2">
-                                                View Details <ArrowRight size={14} />
-                                            </button>
+
+                                                    <button 
+                                                        onClick={() => setSelectedMinistry(ministry.fullData)}
+                                                        className="text-[#082B63] font-semibold text-sm hover:gap-2 transition-all inline-flex items-center gap-1 group-hover:gap-2"
+                                                    >
+                                                        <Eye size={16} /> 
+                                                    </button>
+                                                                                                {user?.role === 'superadmin' && (
+                                                <button 
+                                                    onClick={() => handleDelete(ministry.id)}
+                                                    className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                                    title="Delete Ministry"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -487,6 +519,166 @@ export default function MinistriesPage() {
                             >
                                 Yes, Delete
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* View Details Modal */}
+            {selectedMinistry && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 sm:p-6 overflow-y-auto">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-slate-200 relative animate-in fade-in zoom-in-95 duration-200 my-auto">
+                        {/* Header Image / Pattern Area */}
+                        <div className="h-32 bg-gradient-to-r from-[#082B63] to-[#1E4AA8] rounded-t-3xl relative overflow-hidden">
+                            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
+                            <button 
+                                onClick={() => setSelectedMinistry(null)}
+                                className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full backdrop-blur-sm transition-all"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="px-6 sm:px-8 pb-8">
+                            {/* Profile Header */}
+                            <div className="relative -mt-12 sm:-mt-16 mb-8 flex flex-col sm:flex-row items-start sm:items-end gap-5">
+                                <div className="bg-white p-2 rounded-2xl shadow-lg border border-slate-100">
+                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-blue-50 flex items-center justify-center">
+                                        {getCategoryIcon(selectedMinistry.category, 40)}
+                                    </div>
+                                </div>
+                                <div className="flex-1 pb-1">
+                                    <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3 sm:mb-6">{selectedMinistry.name}</h2>
+
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase">
+                                            {selectedMinistry.category}
+                                        </span>
+                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedMinistry.status || 'Active')} border`}>
+                                            {(!selectedMinistry.status || selectedMinistry.status === 'Active') ? <CheckCircle size={12} /> : <Clock size={12} />}
+                                            {selectedMinistry.status || 'Active'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="pb-1 flex gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+                                    <button 
+                                        onClick={() => {
+                                            setSelectedMinistry(null);
+                                            router.push(`/dashboard/ministries/add?editId=${selectedMinistry._id}`);
+                                        }}
+                                        className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm flex justify-center items-center gap-2 transition-all"
+                                    >
+                                        <Edit size={16} /> Edit
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid lg:grid-cols-3 gap-8">
+                                {/* Left Column - Main Info */}
+                                <div className="lg:col-span-2 space-y-8">
+                                    {/* Mission */}
+                                    <section>
+                                        <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                            <Target size={20} className="text-[#D6A646]" />
+                                            Mission Statement
+                                        </h3>
+                                        <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 text-slate-700 leading-relaxed italic">
+                                            "{selectedMinistry.missionStatement || 'No mission statement provided.'}"
+                                        </div>
+                                    </section>
+
+                                    {/* Description */}
+                                    <section>
+                                        <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                            <FileText size={20} className="text-[#082B63]" />
+                                            About Us
+                                        </h3>
+                                        <p className="text-slate-600 leading-relaxed">
+                                            {selectedMinistry.fullDescription || selectedMinistry.whatWeDo || 'No description provided.'}
+                                        </p>
+                                    </section>
+
+                                    {/* Additional Details */}
+                                    <div className="grid sm:grid-cols-2 gap-6">
+                                        <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                            <h4 className="font-bold text-slate-900 mb-2">What We Do</h4>
+                                            <p className="text-sm text-slate-600">{selectedMinistry.whatWeDo || 'Not specified'}</p>
+                                        </section>
+                                        <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                            <h4 className="font-bold text-slate-900 mb-2">Who We Serve</h4>
+                                            <p className="text-sm text-slate-600">{selectedMinistry.whoWeServe || 'Not specified'}</p>
+                                        </section>
+                                    </div>
+                                </div>
+
+                                {/* Right Column - Quick Facts & Contact */}
+                                <div className="space-y-6">
+                                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 shadow-sm">
+                                        <h3 className="text-base font-bold text-slate-900 mb-5 flex items-center gap-2 border-b border-slate-200 pb-3">
+                                            <Info size={18} className="text-[#082B63]" />
+                                            Quick Facts
+                                        </h3>
+                                        
+                                        <div className="space-y-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                                    <User size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-slate-500 font-medium">Ministry Leader</p>
+                                                    <p className="text-sm font-semibold text-slate-900">{selectedMinistry.leader || 'Unassigned'}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                                                    <MapPin size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-slate-500 font-medium">Primary Location</p>
+                                                    <p className="text-sm font-semibold text-slate-900">{selectedMinistry.primaryLocation || 'Not specified'}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                                                    <Calendar size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-slate-500 font-medium">Year Founded</p>
+                                                    <p className="text-sm font-semibold text-slate-900">{selectedMinistry.yearFounded || 'Not specified'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-[#082B63] rounded-2xl p-6 shadow-md text-white">
+                                        <h3 className="text-base font-bold mb-5 flex items-center gap-2 border-b border-white/20 pb-3">
+                                            <Mail size={18} className="text-[#D6A646]" />
+                                            Contact Info
+                                        </h3>
+                                        
+                                        <div className="space-y-4">
+                                            {selectedMinistry.email && (
+                                                <a href={`mailto:${selectedMinistry.email}`} className="flex items-center gap-3 text-sm text-blue-100 hover:text-white transition-colors">
+                                                    <Mail size={16} className="text-blue-300" shrink-0 />
+                                                    <span className="break-all">{selectedMinistry.email}</span>
+                                                </a>
+                                            )}
+                                            {selectedMinistry.website && (
+                                                <a href={selectedMinistry.website} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-blue-100 hover:text-white transition-colors">
+                                                    <Globe size={16} className="text-blue-300" shrink-0 />
+                                                    <span className="break-all">{selectedMinistry.website.replace(/^https?:\/\//, '')}</span>
+                                                </a>
+                                            )}
+                                            {!selectedMinistry.email && !selectedMinistry.website && (
+                                                <p className="text-sm text-blue-200">No contact information available.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
