@@ -496,7 +496,7 @@ export default function EventsPage() {
                                         return (
                                             <div
                                                 key={idx}
-                                                onClick={() => handleDateClick(day)}
+                                                // onClick={() => handleDateClick(day)}
                                                 className={`border rounded-xl min-h-[100px] p-2 transition-all cursor-pointer flex flex-col
                                         ${isToday
                                                         ? "border-[#082B63]/30 bg-[#082B63]/10"

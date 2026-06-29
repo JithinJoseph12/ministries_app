@@ -273,9 +273,9 @@ function EventFormContent() {
                             name="ministryId"
                             value={eventData.ministryId}
                             onChange={(e) => {
-                                const selectedId = e.target.value;
-                                const selectedName = ministries.find(m => m._id === selectedId)?.name || '';
-                                setEventData(prev => ({ ...prev, ministryId: selectedId, hostMinistry: selectedName }));
+                              const selectedId = e.target.value;
+                              const selectedName = ministries.find(m => m._id === selectedId)?.name || '';
+                              setEventData(prev => ({ ...prev, ministryId: selectedId, hostMinistry: selectedName }));
                             }}
                             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                           >
