@@ -68,6 +68,7 @@ const MinistryPage = () => {
 
   const [logoError, setLogoError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [selectedServiceArea, setSelectedServiceArea] = useState("");
   const [charCount, setCharCount] = useState(0);
   const fileInputRef = useRef(null);
@@ -100,6 +101,20 @@ const MinistryPage = () => {
             });
             setSelectedCategory(m.category || "");
             setSelectedServiceArea(m.serviceArea || "");
+            
+            // Check if the category is custom (not in the predefined list)
+            const predefinedCategories = [
+              "Worship & Music", "Teaching & Discipleship", "Outreach & Evangelism",
+              "Prayer & Intercession", "Youth & Young Adults", "Children's Ministry",
+              "Men's Ministry", "Women's Ministry", "Family", "Pro-life",
+              "Spiritual", "Counseling & Care", "Missions", "Administration"
+            ];
+            if (m.category && !predefinedCategories.includes(m.category)) {
+              setIsCustomCategory(true);
+            } else {
+              setSelectedCategory(m.category || "");
+            }
+
             if (m.fullDescription) {
               setCharCount(m.fullDescription.length);
             }
@@ -124,7 +139,9 @@ const MinistryPage = () => {
     "Children's Ministry",
     "Men's Ministry",
     "Women's Ministry",
-    "Marriage & Family",
+    "Family",
+    "Pro-life",
+    "Spiritual",
     "Counseling & Care",
     "Missions",
     "Administration",
@@ -158,8 +175,14 @@ const MinistryPage = () => {
   // Handle select changes
   const handleCategoryChange = (e) => {
     const value = e.target.value;
-    setSelectedCategory(value);
-    setFormData((prev) => ({ ...prev, category: value }));
+    if (value === "Others (Custom)") {
+      setIsCustomCategory(true);
+      setSelectedCategory("");
+      setFormData((prev) => ({ ...prev, category: "" }));
+    } else {
+      setSelectedCategory(value);
+      setFormData((prev) => ({ ...prev, category: value }));
+    }
   };
 
   const handleServiceAreaChange = (e) => {
@@ -449,19 +472,47 @@ const MinistryPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
-                      <select
-                        value={selectedCategory}
-                        onChange={handleCategoryChange}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                      >
-                        <option value="">Select category</option>
-                        {categories.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-sm font-semibold text-gray-700">Category <span className="text-red-500">*</span></label>
+                        {isCustomCategory && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCustomCategory(false);
+                              setSelectedCategory("");
+                              setFormData((prev) => ({ ...prev, category: "" }));
+                            }}
+                            className="text-[13px] text-[#3157C9] hover:text-[#1E3A8A] font-semibold transition"
+                          >
+                            Back to list
+                          </button>
+                        )}
+                      </div>
+                      
+                      {isCustomCategory ? (
+                        <input
+                          type="text"
+                          name="category"
+                          value={formData.category}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
+                          placeholder="Enter custom category"
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        />
+                      ) : (
+                        <select
+                          value={selectedCategory}
+                          onChange={handleCategoryChange}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                        >
+                          <option value="">Select category</option>
+                          {categories.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                          <option value="Others (Custom)" className="font-semibold text-blue-600">Others (Custom)</option>
+                        </select>
+                      )}
                     </div>
 
                     <div>

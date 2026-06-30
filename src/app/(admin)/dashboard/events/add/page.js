@@ -1,6 +1,6 @@
 "use client";
 
-import { AlignCenter, AlignLeft, AlignRight, Bold, CalendarClock, CalendarDays, Check, ChevronDown, FileText, ImagePlus, Italic, Lightbulb, List, ListOrdered, MapPin, Redo2, Underline, Undo2 } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, CalendarClock, CalendarDays, Check, ChevronDown, FileText, ImagePlus, Italic, Lightbulb, List, ListOrdered, MapPin, Plus, Redo2, Underline, Undo2 } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/src/components/providers/AuthProvider";
@@ -11,13 +11,35 @@ function EventFormContent() {
     category: "",
     hostMinistry: "",
     ministryId: "",
+    sponsor: "",
     shortDescription: "",
     description: "",
-    startDate: "",
-    startTime: "",
-    endDate: "",
-    endTime: "",
-    allDay: false,
+    schedules: [
+      {
+        id: Math.random().toString(36).substr(2, 9),
+        startDate: "",
+        endDate: "",
+        startTime: "",
+        endTime: "",
+        allDay: false,
+        timezone: "America/New_York",
+        recurrence: {
+          enabled: false,
+          frequency: "none",
+          interval: 1,
+          weekdays: [],
+          monthlyType: "dayOfMonth",
+          dayOfMonth: null,
+          weekNumber: null,
+          weekday: null,
+          yearlyMonth: null,
+          yearlyDay: null,
+          endCondition: "never",
+          until: null,
+          count: null
+        }
+      }
+    ],
     venue: "",
     address: "",
     city: "",
@@ -49,13 +71,23 @@ function EventFormContent() {
   const [ministries, setMinistries] = useState([]);
 
   useEffect(() => {
-    if (user?.role === 'superadmin') {
+    if (user) {
       const fetchMinistries = async () => {
         try {
-          const res = await fetch('/api/ministries');
+          const res = await fetch('/api/ministries?limit=100');
           const data = await res.json();
           if (data.success) {
             setMinistries(data.ministries);
+            
+            // If admin, auto-select their assigned ministry
+            if (user.role === 'admin' && data.ministries.length > 0) {
+              const myMinistry = data.ministries[0];
+              setEventData(prev => ({
+                ...prev,
+                ministryId: myMinistry._id,
+                hostMinistry: myMinistry.name
+              }));
+            }
           }
         } catch (err) {
           console.error("Error fetching ministries:", err);
@@ -67,7 +99,11 @@ function EventFormContent() {
 
   useEffect(() => {
     if (prefilledDate && !isEditing) {
-      setEventData(prev => ({ ...prev, startDate: prefilledDate }));
+      setEventData(prev => {
+        const newSchedules = [...prev.schedules];
+        newSchedules[0] = { ...newSchedules[0], startDate: prefilledDate };
+        return { ...prev, schedules: newSchedules };
+      });
     }
   }, [prefilledDate, isEditing]);
 
@@ -84,13 +120,53 @@ function EventFormContent() {
               category: e.category || "",
               hostMinistry: e.hostMinistry || "",
               ministryId: e.ministryId || "",
+              sponsor: e.sponsor || "",
               shortDescription: e.shortDescription || "",
               description: e.description || "",
-              startDate: e.startDate || "",
-              startTime: e.startTime || "",
-              endDate: e.endDate || "",
-              endTime: e.endTime || "",
-              allDay: e.allDay || false,
+              schedules: (e.schedules || []).length > 0 ? e.schedules.map(s => ({
+                  ...s,
+                  recurrence: {
+                      enabled: false,
+                      frequency: "none",
+                      interval: 1,
+                      weekdays: [],
+                      monthlyType: "dayOfMonth",
+                      dayOfMonth: null,
+                      weekNumber: null,
+                      weekday: null,
+                      yearlyMonth: null,
+                      yearlyDay: null,
+                      endCondition: "never",
+                      until: null,
+                      count: null,
+                      ...s.recurrence
+                  }
+              })) : [
+                {
+                  id: Math.random().toString(36).substr(2, 9),
+                  startDate: "",
+                  endDate: "",
+                  startTime: "",
+                  endTime: "",
+                  allDay: false,
+                  timezone: "America/New_York",
+                  recurrence: {
+                      enabled: false,
+                      frequency: "none",
+                      interval: 1,
+                      weekdays: [],
+                      monthlyType: "dayOfMonth",
+                      dayOfMonth: null,
+                      weekNumber: null,
+                      weekday: null,
+                      yearlyMonth: null,
+                      yearlyDay: null,
+                      endCondition: "never",
+                      until: null,
+                      count: null
+                  }
+                }
+              ],
               venue: e.venue || "",
               address: e.address || "",
               city: e.city || "",
@@ -129,6 +205,136 @@ function EventFormContent() {
     }));
   };
 
+  const handleScheduleChange = (index, field, value) => {
+    setEventData(prev => {
+      const updatedSchedules = [...prev.schedules];
+      updatedSchedules[index] = { ...updatedSchedules[index], [field]: value };
+      return { ...prev, schedules: updatedSchedules };
+    });
+  };
+
+  const handleRecurrenceChange = (index, field, value) => {
+    setEventData(prev => {
+      const updatedSchedules = [...prev.schedules];
+      const currentRecurrence = updatedSchedules[index].recurrence || {};
+      updatedSchedules[index] = {
+          ...updatedSchedules[index],
+          recurrence: { ...currentRecurrence, [field]: value }
+      };
+      return { ...prev, schedules: updatedSchedules };
+    });
+  };
+
+  const handleRecurrenceWeekdayToggle = (index, day) => {
+      setEventData(prev => {
+          const updatedSchedules = [...prev.schedules];
+          const currentRecurrence = updatedSchedules[index].recurrence || {};
+          const currentWeekdays = currentRecurrence.weekdays || [];
+          
+          let newWeekdays;
+          if (currentWeekdays.includes(day)) {
+              newWeekdays = currentWeekdays.filter(d => d !== day);
+          } else {
+              newWeekdays = [...currentWeekdays, day];
+          }
+          
+          updatedSchedules[index] = {
+              ...updatedSchedules[index],
+              recurrence: { ...currentRecurrence, weekdays: newWeekdays }
+          };
+          return { ...prev, schedules: updatedSchedules };
+      });
+  };
+
+  const generateRecurrenceSummary = (schedule) => {
+      const r = schedule.recurrence;
+      if (!r || !r.enabled || r.frequency === 'none') return '';
+      
+      let summary = 'Repeats ';
+      
+      if (r.frequency === 'daily') {
+          if (r.interval === 1) summary += 'daily.';
+          else summary += `every ${r.interval} days.`;
+      } else if (r.frequency === 'weekly') {
+          if (r.interval === 1) summary += 'every week ';
+          else summary += `every ${r.interval} weeks `;
+          
+          if (r.weekdays && r.weekdays.length > 0) {
+              summary += `on ${r.weekdays.join(', ')}.`;
+          } else {
+              summary += '.';
+          }
+      } else if (r.frequency === 'monthly') {
+          if (r.interval === 1) summary += 'every month ';
+          else summary += `every ${r.interval} months `;
+          
+          if (r.monthlyType === 'dayOfMonth' && r.dayOfMonth) {
+              summary += `on the ${r.dayOfMonth}.`;
+          } else if (r.monthlyType === 'weekdayPattern' && r.weekNumber && r.weekday) {
+              summary += `on the ${r.weekNumber} ${r.weekday}.`;
+          } else {
+              summary += '.';
+          }
+      } else if (r.frequency === 'yearly') {
+          if (r.interval === 1) summary += 'every year ';
+          else summary += `every ${r.interval} years `;
+          
+          if (r.yearlyMonth && r.yearlyDay) {
+              summary += `on ${r.yearlyMonth} ${r.yearlyDay}.`;
+          } else {
+              summary += '.';
+          }
+      }
+      
+      if (r.endCondition === 'onDate' && r.until) {
+          summary = summary.replace(/\.$/, '') + ` until ${r.until}.`;
+      } else if (r.endCondition === 'afterCount' && r.count) {
+          summary = summary.replace(/\.$/, '') + `, ${r.count} times.`;
+      }
+      
+      return summary;
+  };
+
+  const addSchedule = () => {
+    setEventData(prev => ({
+      ...prev,
+      schedules: [
+        ...prev.schedules,
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          startDate: "",
+          endDate: "",
+          startTime: "",
+          endTime: "",
+          allDay: false,
+          timezone: "America/New_York",
+          recurrence: {
+              enabled: false,
+              frequency: "none",
+              interval: 1,
+              weekdays: [],
+              monthlyType: "dayOfMonth",
+              dayOfMonth: null,
+              weekNumber: null,
+              weekday: null,
+              yearlyMonth: null,
+              yearlyDay: null,
+              endCondition: "never",
+              until: null,
+              count: null
+          }
+        }
+      ]
+    }));
+  };
+
+  const removeSchedule = (index) => {
+    setEventData(prev => {
+      const updatedSchedules = prev.schedules.filter((_, i) => i !== index);
+      return { ...prev, schedules: updatedSchedules };
+    });
+  };
+
   const handleDescriptionChange = (e) => {
     const value = e.target.value;
     setEventData((prev) => ({ ...prev, description: value }));
@@ -142,6 +348,77 @@ function EventFormContent() {
 
   const handleSubmit = async (e, action) => {
     e.preventDefault();
+    
+    // Validate schedules
+    if (!eventData.schedules || eventData.schedules.length === 0) {
+      alert("Please add at least one schedule.");
+      return;
+    }
+    for (let i = 0; i < eventData.schedules.length; i++) {
+      const s = eventData.schedules[i];
+      if (!s.startDate) {
+        alert(`Start Date is required for Occurrence ${i + 1}.`);
+        return;
+      }
+      if (!s.allDay) {
+        if (!s.startTime) {
+          alert(`Start Time is required for Occurrence ${i + 1} (unless All Day is checked).`);
+          return;
+        }
+        if (!s.endTime) {
+          alert(`End Time is required for Occurrence ${i + 1} (unless All Day is checked).`);
+          return;
+        }
+        if (s.startTime && s.endTime && (!s.endDate || s.startDate === s.endDate)) {
+            if (s.endTime <= s.startTime) {
+                alert(`End Time must be after Start Time for Occurrence ${i + 1}.`);
+                return;
+            }
+        }
+      }
+      if (s.endDate && s.endDate < s.startDate) {
+        alert(`End Date cannot be before Start Date in Occurrence ${i + 1}.`);
+        return;
+      }
+      if (s.recurrence && s.recurrence.enabled) {
+          const r = s.recurrence;
+          if (r.frequency === 'daily' && (!r.interval || r.interval < 1)) {
+              alert(`Interval is required for daily recurrence in Occurrence ${i + 1}.`);
+              return;
+          }
+          if (r.frequency === 'weekly' && (!r.weekdays || r.weekdays.length === 0)) {
+              alert(`At least one weekday must be selected for weekly recurrence in Occurrence ${i + 1}.`);
+              return;
+          }
+          if (r.frequency === 'monthly') {
+              if (r.monthlyType === 'dayOfMonth' && (!r.dayOfMonth || r.dayOfMonth < 1 || r.dayOfMonth > 31)) {
+                  alert(`Valid day of month (1-31) is required for monthly recurrence in Occurrence ${i + 1}.`);
+                  return;
+              }
+              if (r.monthlyType === 'weekdayPattern' && (!r.weekNumber || !r.weekday)) {
+                  alert(`Week number and weekday are required for monthly recurrence pattern in Occurrence ${i + 1}.`);
+                  return;
+              }
+          }
+          if (r.frequency === 'yearly' && (!r.yearlyMonth || !r.yearlyDay)) {
+              alert(`Month and day are required for yearly recurrence in Occurrence ${i + 1}.`);
+              return;
+          }
+          if (r.endCondition === 'onDate' && !r.until) {
+              alert(`End date is required when "On Date" end condition is selected in Occurrence ${i + 1}.`);
+              return;
+          }
+          if (r.endCondition === 'onDate' && r.until < s.startDate) {
+              alert(`End date cannot be before start date in Occurrence ${i + 1}.`);
+              return;
+          }
+          if (r.endCondition === 'afterCount' && (!r.count || r.count < 1)) {
+              alert(`Valid occurrence count is required in Occurrence ${i + 1}.`);
+              return;
+          }
+      }
+    }
+
     if (action === "publish") {
       try {
         setIsSubmitting(true);
@@ -260,60 +537,74 @@ function EventFormContent() {
                           className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                         >
                           <option value="">Select category</option>
+                          <option>Youth/Young Adult</option>
+                          <option>Family</option>
+                          <option>Pro-Life</option>
                           <option>Worship Service</option>
+                          <option>Spiritual</option>
                           <option>Bible Study</option>
                           <option>Youth Event</option>
                           <option>Community Outreach</option>
                         </select>
                       </div>
-                      {user?.role === 'superadmin' ? (
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">Ministry <span className="text-red-500">*</span></label>
-                          <select
-                            name="ministryId"
-                            value={eventData.ministryId}
-                            onChange={(e) => {
-                              const selectedId = e.target.value;
-                              const selectedName = ministries.find(m => m._id === selectedId)?.name || '';
-                              setEventData(prev => ({ ...prev, ministryId: selectedId, hostMinistry: selectedName }));
-                            }}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                          >
-                            <option value="">Select ministry</option>
-                            {ministries.map(m => (
-                              <option key={m._id} value={m._id}>{m.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      ) : (
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">Host Ministry</label>
-                          <select
-                            name="hostMinistry"
-                            value={eventData.hostMinistry}
-                            onChange={handleChange}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                          >
-                            <option value="">Select ministry</option>
-                            <option value="A Baby's Breath">A Baby's Breath</option>
-                            <option value="House of God's Light">House of God's Light</option>
-                            <option value="Life Runners">Life Runners</option>
-                            <option value="Gianna Center">Gianna Center</option>
-                            <option value="Militia of Immaculata">Militia of Immaculata</option>
-                            <option value="Society of St. Vincent">Society of St. Vincent</option>
-                          </select>
-                        </div>
-                      )}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                          {user?.role === 'superadmin' ? 'Ministry' : 'Host Ministry'} <span className="text-red-500">*</span>
+                        </label>
+{user?.role === "superadmin" ? (
+  <select
+    name="ministryId"
+    value={eventData.ministryId}
+    onChange={(e) => {
+      const selectedId = e.target.value;
+      const selectedName =
+        ministries.find((m) => m._id === selectedId)?.name || "";
+
+      setEventData((prev) => ({
+        ...prev,
+        ministryId: selectedId,
+        hostMinistry: selectedName,
+      }));
+    }}
+    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+  >
+    <option value="">Select ministry</option>
+    {ministries.map((m) => (
+      <option key={m._id} value={m._id}>
+        {m.name}
+      </option>
+    ))}
+  </select>
+) : (
+  <input
+    type="text"
+    value={eventData.hostMinistry}
+    readOnly
+    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-100 text-gray-600 cursor-not-allowed"
+  />
+)}
+                      </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Short Description</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Sponsor</label>
+                      <input
+                        name="sponsor"
+                        value={eventData.sponsor}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="Event Sponsor "
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Short Description <span className="text-red-500">*</span></label>
                       <input
                         name="shortDescription"
                         value={eventData.shortDescription}
                         onChange={handleChange}
                         className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-                        placeholder="Brief summary of the event (optional)"
+                        placeholder="Brief summary of the event"
                         maxLength={150}
+                        required
                       />
                     </div>
                     <div>
@@ -432,59 +723,343 @@ function EventFormContent() {
                     >
                       2. Date & Time
                     </h2>
-                  </div>                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Start Date <span className="text-red-500">*</span></label>
-                      <input
-                        name="startDate"
-                        type="date"
-                        value={eventData.startDate}
-                        onChange={handleChange}
-                        disabled={!!prefilledDate}
-                        className={`w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none ${prefilledDate ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'focus:ring-2 focus:ring-blue-500'}`}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Start Time</label>
-                      <input
-                        name="startTime"
-                        type="time"
-                        value={eventData.startTime}
-                        onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">End Date</label>
-                      <input
-                        name="endDate"
-                        type="date"
-                        value={eventData.endDate}
-                        onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">End Time</label>
-                      <input
-                        name="endTime"
-                        type="time"
-                        value={eventData.endTime}
-                        onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
+                  </div>                  <div className="space-y-6">
+                    {eventData.schedules.map((schedule, index) => {
+                      const r = schedule.recurrence || { enabled: false, frequency: 'none' };
+                      return (
+                      <div key={schedule.id || index} className="p-5 rounded-xl border border-gray-100 bg-gray-50/50 relative">
+                        <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-4">
+                          <h3 className="font-semibold text-gray-700 text-sm">Schedule {index + 1}</h3>
+                          {eventData.schedules.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeSchedule(index)}
+                              className="text-red-500 hover:text-red-700 text-sm font-medium transition"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="mb-6 border-b border-gray-200 pb-6">
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">Schedule Type</label>
+                          <div className="flex gap-4">
+                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                              <input 
+                                type="radio" 
+                                checked={!r.enabled} 
+                                onChange={() => {
+                                    handleRecurrenceChange(index, 'enabled', false);
+                                    handleRecurrenceChange(index, 'frequency', 'none');
+                                }}
+                                className="text-blue-600 focus:ring-blue-500"
+                              />
+                              One Time
+                            </label>
+                            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                              <input 
+                                type="radio" 
+                                checked={r.enabled} 
+                                onChange={() => {
+                                    handleRecurrenceChange(index, 'enabled', true);
+                                    if (r.frequency === 'none') {
+                                        handleRecurrenceChange(index, 'frequency', 'daily');
+                                    }
+                                }}
+                                className="text-blue-600 focus:ring-blue-500"
+                              />
+                              Recurring
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{r.enabled ? "First Occurrence" : "Start Date"} <span className="text-red-500">*</span></label>
+                            <input
+                              type="date"
+                              value={schedule.startDate}
+                              onChange={(e) => handleScheduleChange(index, 'startDate', e.target.value)}
+                              disabled={!!prefilledDate && index === 0}
+                              className={`w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none ${prefilledDate && index === 0 ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'focus:ring-2 focus:ring-blue-500 bg-white'}`}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Start Time {!schedule.allDay && <span className="text-red-500">*</span>}</label>
+                            <input
+                              type="time"
+                              value={schedule.startTime}
+                              onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)}
+                              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{r.enabled ? "Duration Ends" : "End Date"}</label>
+                            <input
+                              type="date"
+                              value={schedule.endDate}
+                              onChange={(e) => handleScheduleChange(index, 'endDate', e.target.value)}
+                              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">End Time {!schedule.allDay && <span className="text-red-500">*</span>}</label>
+                            <input
+                              type="time"
+                              value={schedule.endTime}
+                              onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)}
+                              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                            />
+                          </div>
+                        </div>
+                        <label className="flex items-center gap-2 text-sm text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={schedule.allDay}
+                            onChange={(e) => handleScheduleChange(index, 'allDay', e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                          All Day Event
+                        </label>
+
+                        {/* Recurrence Section */}
+                        {r.enabled && (
+                          <div className="mt-6 pt-6 border-t border-gray-200">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-4">Recurrence</h4>
+                            
+                            <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                                    <select 
+                                        value={r.frequency || 'daily'}
+                                        onChange={(e) => handleRecurrenceChange(index, 'frequency', e.target.value)}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none bg-white"
+                                    >
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                        <option value="yearly">Yearly</option>
+                                    </select>
+                                </div>
+                                
+                                {r.frequency !== 'yearly' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Every</label>
+                                        <div className="flex items-center gap-2">
+                                            <input 
+                                                type="number" 
+                                                min="1"
+                                                value={r.interval || 1}
+                                                onChange={(e) => handleRecurrenceChange(index, 'interval', parseInt(e.target.value) || 1)}
+                                                className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none bg-white"
+                                            />
+                                            <span className="text-sm text-gray-600">
+                                                {r.frequency === 'daily' ? 'day(s)' : r.frequency === 'weekly' ? 'week(s)' : 'month(s)'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {r.frequency === 'weekly' && (
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Occurs On</label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
+                                            <label key={day} className="flex items-center gap-1.5 text-sm text-gray-700">
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={(r.weekdays || []).includes(day)}
+                                                    onChange={() => handleRecurrenceWeekdayToggle(index, day)}
+                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                />
+                                                {day}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {r.frequency === 'monthly' && (
+                                <div className="mb-4 p-4 bg-white rounded-lg border border-gray-200">
+                                    <div className="flex flex-col gap-4">
+                                        <label className="flex items-start gap-3">
+                                            <input 
+                                                type="radio" 
+                                                name={`monthlyType-${index}`}
+                                                checked={r.monthlyType === 'dayOfMonth' || !r.monthlyType}
+                                                onChange={() => handleRecurrenceChange(index, 'monthlyType', 'dayOfMonth')}
+                                                className="mt-1 text-blue-600 focus:ring-blue-500"
+                                            />
+                                            <div>
+                                                <span className="block text-sm font-medium text-gray-700 mb-2">Day of Month</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-gray-600">Day</span>
+                                                    <input 
+                                                        type="number" 
+                                                        min="1" max="31"
+                                                        value={r.dayOfMonth || ''}
+                                                        onChange={(e) => handleRecurrenceChange(index, 'dayOfMonth', parseInt(e.target.value))}
+                                                        disabled={r.monthlyType === 'weekdayPattern'}
+                                                        className="w-20 border border-gray-300 rounded-lg px-3 py-1.5 text-sm outline-none bg-white disabled:bg-gray-100"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </label>
+                                        
+                                        <label className="flex items-start gap-3">
+                                            <input 
+                                                type="radio" 
+                                                name={`monthlyType-${index}`}
+                                                checked={r.monthlyType === 'weekdayPattern'}
+                                                onChange={() => handleRecurrenceChange(index, 'monthlyType', 'weekdayPattern')}
+                                                className="mt-1 text-blue-600 focus:ring-blue-500"
+                                            />
+                                            <div>
+                                                <span className="block text-sm font-medium text-gray-700 mb-2">Weekday Pattern</span>
+                                                <div className="flex items-center gap-2">
+                                                    <select 
+                                                        value={r.weekNumber || ''}
+                                                        onChange={(e) => handleRecurrenceChange(index, 'weekNumber', e.target.value)}
+                                                        disabled={r.monthlyType !== 'weekdayPattern'}
+                                                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none bg-white disabled:bg-gray-100"
+                                                    >
+                                                        <option value="">Select...</option>
+                                                        <option value="First">First</option>
+                                                        <option value="Second">Second</option>
+                                                        <option value="Third">Third</option>
+                                                        <option value="Fourth">Fourth</option>
+                                                        <option value="Last">Last</option>
+                                                    </select>
+                                                    <select 
+                                                        value={r.weekday || ''}
+                                                        onChange={(e) => handleRecurrenceChange(index, 'weekday', e.target.value)}
+                                                        disabled={r.monthlyType !== 'weekdayPattern'}
+                                                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none bg-white disabled:bg-gray-100"
+                                                    >
+                                                        <option value="">Select...</option>
+                                                        <option value="Sunday">Sunday</option>
+                                                        <option value="Monday">Monday</option>
+                                                        <option value="Tuesday">Tuesday</option>
+                                                        <option value="Wednesday">Wednesday</option>
+                                                        <option value="Thursday">Thursday</option>
+                                                        <option value="Friday">Friday</option>
+                                                        <option value="Saturday">Saturday</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
+
+                            {r.frequency === 'yearly' && (
+                                <div className="mb-4 flex flex-wrap items-center gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-gray-700">Every</span>
+                                        <input 
+                                            type="number" 
+                                            min="1"
+                                            value={r.interval || 1}
+                                            onChange={(e) => handleRecurrenceChange(index, 'interval', parseInt(e.target.value) || 1)}
+                                            className="w-16 border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none bg-white"
+                                        />
+                                        <span className="text-sm text-gray-600">year(s) on</span>
+                                    </div>
+                                    <select 
+                                        value={r.yearlyMonth || ''}
+                                        onChange={(e) => handleRecurrenceChange(index, 'yearlyMonth', e.target.value)}
+                                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none bg-white"
+                                    >
+                                        <option value="">Month</option>
+                                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                                            <option key={m} value={m}>{m}</option>
+                                        ))}
+                                    </select>
+                                    <input 
+                                        type="number" 
+                                        min="1" max="31"
+                                        placeholder="Day"
+                                        value={r.yearlyDay || ''}
+                                        onChange={(e) => handleRecurrenceChange(index, 'yearlyDay', parseInt(e.target.value))}
+                                        className="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none bg-white"
+                                    />
+                                </div>
+                            )}
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Ends</label>
+                                <div className="flex flex-col gap-3">
+                                    <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                        <input 
+                                            type="radio" 
+                                            name={`endCondition-${index}`}
+                                            checked={r.endCondition === 'never' || !r.endCondition}
+                                            onChange={() => handleRecurrenceChange(index, 'endCondition', 'never')}
+                                            className="text-blue-600 focus:ring-blue-500"
+                                        />
+                                        Never
+                                    </label>
+                                    <div className="flex items-center gap-3">
+                                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                            <input 
+                                                type="radio" 
+                                                name={`endCondition-${index}`}
+                                                checked={r.endCondition === 'onDate'}
+                                                onChange={() => handleRecurrenceChange(index, 'endCondition', 'onDate')}
+                                                className="text-blue-600 focus:ring-blue-500"
+                                            />
+                                            On Date
+                                        </label>
+                                        <input 
+                                            type="date" 
+                                            value={r.until || ''}
+                                            onChange={(e) => handleRecurrenceChange(index, 'until', e.target.value)}
+                                            disabled={r.endCondition !== 'onDate'}
+                                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm outline-none bg-white disabled:bg-gray-100"
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                            <input 
+                                                type="radio" 
+                                                name={`endCondition-${index}`}
+                                                checked={r.endCondition === 'afterCount'}
+                                                onChange={() => handleRecurrenceChange(index, 'endCondition', 'afterCount')}
+                                                className="text-blue-600 focus:ring-blue-500"
+                                            />
+                                            After Number of Occurrences
+                                        </label>
+                                        <input 
+                                            type="number" 
+                                            min="1"
+                                            placeholder="10"
+                                            value={r.count || ''}
+                                            onChange={(e) => handleRecurrenceChange(index, 'count', parseInt(e.target.value))}
+                                            disabled={r.endCondition !== 'afterCount'}
+                                            className="w-20 border border-gray-300 rounded-lg px-3 py-1.5 text-sm outline-none bg-white disabled:bg-gray-100"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-800 italic">
+                                {generateRecurrenceSummary(schedule)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )})}
+                    
+                    <button
+                      type="button"
+                      onClick={addSchedule}
+                      className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 font-medium hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Plus size={18} />
+                      Add Another Schedule
+                    </button>
                   </div>
-                  <label className="flex items-center gap-2 mt-4 text-sm text-gray-700">
-                    <input
-                      name="allDay"
-                      type="checkbox"
-                      checked={eventData.allDay}
-                      onChange={handleChange}
-                      className="rounded border-gray-300"
-                    />
-                    All Day Event
-                  </label>
                 </div>
 
                 {/* 3. Location */}

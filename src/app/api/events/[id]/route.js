@@ -64,6 +64,19 @@ export async function PATCH(request, { params }) {
         updateData.ministryId = null;
     }
 
+    // fallback for schedules
+    if (!updateData.schedules || updateData.schedules.length === 0) {
+      if (updateData.startDate) {
+        updateData.schedules = [{
+          startDate: updateData.startDate,
+          startTime: updateData.startTime,
+          endDate: updateData.endDate,
+          endTime: updateData.endTime,
+          allDay: updateData.allDay || false
+        }];
+      }
+    }
+
     const updatedEvent = await Event.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
 
     if (!updatedEvent) {
@@ -91,10 +104,25 @@ export async function GET(request, { params }) {
         return NextResponse.json({ success: false, message: 'Event ID is required' }, { status: 400 });
     }
 
-    const event = await Event.findById(id);
+    const event = await Event.findById(id).lean();
     
     if (!event) {
         return NextResponse.json({ success: false, message: 'Event not found' }, { status: 404 });
+    }
+
+    if (!event.schedules || event.schedules.length === 0) {
+        if (event.startDate) {
+            event.schedules = [{
+                id: crypto.randomUUID ? crypto.randomUUID() : undefined,
+                startDate: event.startDate,
+                startTime: event.startTime,
+                endDate: event.endDate,
+                endTime: event.endTime,
+                allDay: event.allDay || false
+            }];
+        } else {
+            event.schedules = [];
+        }
     }
 
     return NextResponse.json({ success: true, event }, { status: 200 });

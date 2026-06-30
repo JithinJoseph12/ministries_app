@@ -1,124 +1,14 @@
 // app/ministries/page.js
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Navbar from '@/src/components/layout/Navbar';
 import { ArrowRight, Bird, CalendarDays, ChevronRight, Church, Cross, Grid2x2, HandHeart, Heart, MapPin, Megaphone, Menu, ShieldCheck, User2, Users, Search, LayoutGrid } from 'lucide-react';
 import { GiDove } from "react-icons/gi";
 import { FaDashcube } from 'react-icons/fa';
-// Sample ministry data - replace with your actual data source
-const ministriesData = [
-    {
-        id: 1,
-        name: "A Baby's Breath",
-        category: "Pro-Life",
-        description: "A Baby's Breath offers a variety of services aimed at supporting mothers, fathers, and families during challenging times. These services include in-person counseling to help mothers navigate the emotional and practical aspects of crisis pregnancy. A Baby Store is available for essential items for newborns and children. They also provide parenting classes and prenatal education to help families prepare for the arrival of the newborn. A Baby's Breath has 6 Philadelphia locations.",
-        iconColor: "bg-blue-100",
-        textColor: "text-blue-700",
-        bgIcon: "bg-blue-50",
-        image: "/images/ministries/baby-breath.jpg",
-        logo: "/images/mini1.webp",
-        website: "https://ababysbreath.org"
-    },
-    {
-        id: 2,
-        name: "Society of Saint Vincent de Paul",
-        category: "Mission",
-        description: "The Society of St. Vincent de Paul is a worldwide organization of volunteer lay Catholics following Christ’s call to serve the poor, the suffering, and the deprived. Volunteers not only provide material assistance such as rent, utilities, food, or clothing, but also help with needed resources, referral information, friendship, and most importantly, prayer. We assist all people in need, regardless of religious beliefs, ethnic or social background, age, or gender.",
-        iconColor: "bg-indigo-100",
-        textColor: "text-indigo-700",
-        bgIcon: "bg-indigo-50",
-        image: "/images/ministries/mission.jpg",
-        logo: "/images/mini1.webp",
-        website: "https://ssvpusa.org/"
-    },
-    {
-        id: 3,
-        name: "Bishop Shanahan HS Theology Dept.",
-        category: "Youth",
-        description: "Bishop Shanahan High School, a Catholic co-educational secondary school of the Archdiocese of Phila., provides a strong spiritual life, along with challenging academic and rich extracurricular programs. A strong witness to Christian values and commitment to academic rigor and integrity prepare all students to be critical thinkers and moral stewards in a rapidly evolving global world.",
-        iconColor: "bg-pink-100",
-        textColor: "text-pink-700",
-        bgIcon: "bg-pink-50",
-        image: "/images/ministries/youth.jpg",
-        logo: "/images/mini1.webp",
-        website: "https://www.shanahan.org"
-    },
-    {
-        id: 4,
-        name: "Gianna Center of Philadelphia",
-        category: "Family",
-        description: "The Gianna Center of Philadelphia provides general gynecologic care, natural family planning education and infertility services - all while honoring the sanctity of each human life, the dignity of women and the integrity of marriage. All medical treatments are aimed at restoring the reproductive system and working cooperatively with a woman's body.",
-        iconColor: "bg-green-100",
-        textColor: "text-green-700",
-        bgIcon: "bg-green-50",
-        image: "/images/ministries/gianna-center.jpg",
-        logo: "/images/mini1.webp",
-        website: "https://www.phgiannacenter.org"
-    },
-    {
-        id: 5,
-        name: "House of God's Light",
-        category: "Evangelization",
-        description: "HOGL's mission is to make wholehearted disciples of Jesus and to see the Church renewed with growing disciples who are equipped to advance God's kingdom in the world. We build a community that embodies the values of a wholehearted disciple: As a community, we choose to spend our lives in adoration, honor, and praise to God. We seek to display the unity of the Body of Christ by loving one another deeply. We hunger to respond to God's Word in prayer and use our spiritual gifts to encourage one another. We follow the Jesus in our community and in the world by interceding, equipping, giving, and going.",
-        iconColor: "bg-purple-100",
-        textColor: "text-purple-700",
-        bgIcon: "bg-purple-50",
-        image: "/images/ministries/gods-light.jpg",
-        logo: "/images/mini1.webp",
-        website: "https://www.houseofgodslight.com"
-    },
-    {
-        id: 6,
-        name: "In His Sign Ministry",
-        category: "Evangelization",
-        description: "IN HIS SIGN NETWORK is a radio and communications ministry of lay Catholics proclaiming the Good News of Jesus Christ in obedience to the Magisterium of the Roman Catholic Church. The mission is to communicate Catholic Christian moral principles in accordance with the authority of the Church primarily through radio and the Internet. In His Sign Network has adopted as our patron Saint Maximilian Maria Kolbe, one of the greatest spiritual communicators of the twentieth century.",
-        iconColor: "bg-yellow-100",
-        textColor: "text-yellow-700",
-        bgIcon: "bg-yellow-50",
-        image: "/images/ministries/evangelization.jpg",
-        logo: "/images/mini1.webp",
-        website: "https://www.inhissign.com"
-    },
-    {
-        id: 7,
-        name: "Intelligent Design for Catholics",
-        category: "Formation",
-        description: "Fifty percent of the millions leaving the faith give science as the reason. By that, they mean Darwinian evolution. Intelligent design theory argues that macroevolution is a \"theory in crisis.\" In ministry, Tim discusses why many feel that this is a crucial issue to people of faith in our modern era while demonstrating that all life is designed by an evident designer who Christians acknowledge as the God of creation.",
-        iconColor: "bg-teal-100",
-        textColor: "text-teal-700",
-        bgIcon: "bg-teal-50",
-        image: "/images/ministries/formation.jpg",
-        logo: "/images/mini1.webp",
-        website: "https://app.screencast.com/QblucGFR5e5X4"
-    },
-    {
-        id: 8,
-        name: "Life Runners",
-        category: "Pro-Life",
-        description: "We believe in the dignity of all human life from conception to natural death. We run as a Prayer, to defend children in the womb. We run to build Endurance, for the race is long and we must keep our eyes fixed on You Lord. We run for Awareness, so our culture will view all human life as a reflection of Your glory Lord. We run for Charity, to provide support for mothers and fathers tempted to abort their child, and healing support for post-abortion women. We run to End abortion, for Christ died so that all may live.",
-        iconColor: "bg-red-100",
-        textColor: "text-red-700",
-        bgIcon: "bg-red-50",
-        image: "/images/ministries/pro-life.jpg",
-        logo: "/images/mini1.webp",
-        website: "https://www.liferunners.org"
-    },
-    {
-        id: 9,
-        name: "Mid-Atlantic Knights of Immaculata",
-        category: "Men",
-        description: "The Militia Immaculata is a world-wide organization started by St. Maximillian Kolbe in 1917. Its mission is to bring souls to Christ through total consecration to Mary. The local MI of the Mid-Atlantic sponsors an annual retreat of over 300 men at the Malvern Retreat House. The goal of this retreat is to lead men to Christ through Mary, thereby helping them to become holy fathers, husbands and leaders.",
-        iconColor: "bg-orange-100",
-        textColor: "text-orange-700",
-        bgIcon: "bg-orange-50",
-        image: "/images/ministries/men.jpg",
-        logo: "/images/mini1.webp",
-        website: "https://www.facebook.com"
-    }
-];
+
 const upcomingEvents = [
   {
     month: "MAY",
@@ -158,18 +48,13 @@ const categories = [
     { id: "pro-life", name: "Pro-Life", icon: <Heart size={34} strokeWidth={1.8} /> },
     { id: "youth", name: "Youth", icon: <GiDove size={34} strokeWidth={1.8} /> },
     { id: "family", name: "Family", icon: <Users size={34} strokeWidth={1.8} /> },
-    { id: "formation", name: "Formation", icon: <Cross size={34} strokeWidth={1.8} /> },
+    { id: "spiritual", name: "Spiritual", icon: <Cross size={34} strokeWidth={1.8} /> },
     { id: "evangelization", name: "Evangelization", icon: <Megaphone size={34} strokeWidth={1.8} /> },
     { id: "outreach", name: "Outreach", icon: <HandHeart size={34} strokeWidth={1.8} /> },
-    { id: "men", name: "Men", icon: <ShieldCheck size={34} strokeWidth={1.8} /> },
+    { id: "formation", name: "Formation", icon: <ShieldCheck size={34} strokeWidth={1.8} /> },
     { id: "mission", name: "Mission", icon: <Church size={34} strokeWidth={1.8} /> }
 ];
 
-// const upcomingEvents = [
-//     { date: "May 24", title: "Eucharistic Miracles Exhibit", time: "6:30 PM" },
-//     { date: "May 30", title: "Men Through Mary Retreat", time: "9:00 AM" },
-//     { date: "June 03", title: "Family Prayer Evening", time: "7:00 PM" }
-// ];
 
 export default function MinistriesPage() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -177,6 +62,42 @@ export default function MinistriesPage() {
     const [sortOrder, setSortOrder] = useState('asc');
     const [expandedIds, setExpandedIds] = useState([]);
     const [showAllEvents, setShowAllEvents] = useState(false);
+    
+    // Dynamic Ministries Data State
+    const [ministriesData, setMinistriesData] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showAllMinistries, setShowAllMinistries] = useState(false);
+
+    useEffect(() => {
+        const fetchMinistries = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch up to 100 ministries for client-side display and filtering
+                const res = await fetch('/api/ministries?limit=100');
+                const data = await res.json();
+                if (data.success) {
+                    // Filter out Draft and Pending from public view
+                    const activeMinistries = data.ministries.filter(m => m.status !== 'Draft' && m.status !== 'Pending');
+                    
+                    const mapped = activeMinistries.map(m => ({
+                        id: m._id,
+                        name: m.name,
+                        category: m.category || 'Mission',
+                        description: m.shortDescription || m.fullDescription || m.missionStatement || '',
+                        website: m.website || '',
+                        logo: m.logoUrl || '/images/mini1.webp',
+                    }));
+                    setMinistriesData(mapped);
+                }
+            } catch (error) {
+                console.error("Error fetching ministries:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchMinistries();
+    }, []);
 
     const toggleExpand = (id) => {
         setExpandedIds(prev => 
@@ -188,7 +109,7 @@ export default function MinistriesPage() {
     const filteredMinistries = ministriesData.filter(ministry => {
         const matchesSearch = ministry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             ministry.description.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === '' || ministry.category === selectedCategory;
+        const matchesCategory = selectedCategory === '' || (ministry.category || '').toLowerCase().includes(selectedCategory.toLowerCase());
         return matchesSearch && matchesCategory;
     });
 
@@ -200,6 +121,8 @@ export default function MinistriesPage() {
             return b.name.localeCompare(a.name);
         }
     });
+
+    const displayedMinistries = showAllMinistries ? sortedMinistries : sortedMinistries.slice(0, 9);
 
     return (
         <div className="min-h-screen bg-white">
@@ -367,28 +290,28 @@ export default function MinistriesPage() {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
 
-                    {categories.map((category, index) => (
+                    {categories.map((ministry, index) => (
 
                         <button
-                            key={category.id}
+                            key={ministry.id}
                             onClick={() =>
                                 setSelectedCategory(
-                                    selectedCategory === category.name
+                                    selectedCategory === ministry.name
                                         ? ""
-                                        : category.name
+                                        : ministry.name
                                 )
                             }
                             className="group transition-all duration-300"
                             style={{
                                 background: "#fff",
                                 border:
-                                    selectedCategory === category.name
+                                    selectedCategory === ministry.name
                                         ? "1.5px solid #D6A646"
                                         : "1px solid #E8EDF5",
                                 borderRadius: "12px",
                                 height: "95px",
                                 boxShadow:
-                                    selectedCategory === category.name
+                                    selectedCategory === ministry.name
                                         ? "0 6px 18px rgba(214,166,70,.12)"
                                         : "0 2px 8px rgba(15,23,42,.04)",
                             }}
@@ -399,10 +322,10 @@ export default function MinistriesPage() {
                                     className="text-[30px] transition-transform group-hover:scale-110"
                                     style={{
                                         color:
-                                            category.color || (index % 2 === 0 ? "#D6A646" : "blue"),
+                                            ministry.color || (index % 2 === 0 ? "#D6A646" : "blue"),
                                     }}
                                 >
-                                    {category.icon}
+                                    {ministry.icon}
                                 </div>
 
                                 <p
@@ -415,7 +338,7 @@ export default function MinistriesPage() {
                                         lineHeight: "1.2",
                                     }}
                                 >
-                                    {category.name}
+                                    {ministry.name}
                                 </p>
 
                             </div>
@@ -474,8 +397,15 @@ export default function MinistriesPage() {
                 </div>
 
                 <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-4">
-
-                    {sortedMinistries.map((ministry) => (
+                    {isLoading ? (
+                        <div className="col-span-full py-12 text-center text-[#4B5563] text-[15px] font-medium">
+                            Loading ministries...
+                        </div>
+                    ) : displayedMinistries.length === 0 ? (
+                        <div className="col-span-full py-12 text-center text-[#4B5563] text-[15px] font-medium">
+                            No ministries found matching your criteria.
+                        </div>
+                    ) : displayedMinistries.map((ministry) => (
 
                         <div
                             key={ministry.id}
@@ -502,17 +432,15 @@ export default function MinistriesPage() {
 
                                 <div className="flex-1">
 
-                                    <div className="flex flex-wrap items-center gap-2">
+                                  <div>
+                                      <h3 className="text-[20px] leading-5 font-bold text-[#20376D]">
+                                          {ministry.name}
+                                      </h3>
 
-                                        <h3 className="text-[20px] leading-5 font-bold text-[#20376D]">
-                                            {ministry.name}
-                                        </h3>
-
-                                        <span className="text-[10px] uppercase tracking-wide px-2 py-[2px] rounded bg-[#F7E8C2] text-[#9A6B00] font-semibold">
-                                            {ministry.category}
-                                        </span>
-
-                                    </div>
+                                      <span className="inline-flex mt-2 text-[10px] uppercase tracking-wide px-2 py-[2px] rounded bg-[#F7E8C2] text-[#9A6B00] font-semibold">
+                                          {ministry.category}
+                                      </span>
+                                  </div>
 
                                     <div>
                                         <p className={`text-[13px] text-[#4B5563] leading-[20px] mt-2 ${expandedIds.includes(ministry.id) ? "" : "line-clamp-2"}`}>
@@ -546,13 +474,16 @@ export default function MinistriesPage() {
 
                 </div>
 
-                <div className="flex justify-center mt-8">
-
-                    <button className="border border-[#9EB3DB] text-[#20376D] font-semibold text-[14px] px-8 py-3 rounded-md hover:bg-[#F5F8FD] transition">
-                        View All Ministries
-                    </button>
-
-                </div>
+                {sortedMinistries.length > 9 && (
+                    <div className="flex justify-center mt-8">
+                        <button 
+                            onClick={() => setShowAllMinistries(!showAllMinistries)}
+                            className="border border-[#9EB3DB] text-[#20376D] font-semibold text-[14px] px-8 py-3 rounded-md hover:bg-[#F5F8FD] transition"
+                        >
+                            {showAllMinistries ? "Show Less" : "View All Ministries"}
+                        </button>
+                    </div>
+                )}
 
             </section>
 

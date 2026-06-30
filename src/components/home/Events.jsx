@@ -1,54 +1,108 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useEvents } from '@/src/hooks/useEvents';
 
 export default function Events() {
-  const { events: allEvents, isLoading, getCalendarDays } = useEvents();
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [targetMonth, setTargetMonth] = useState(new Date().getMonth());
+  const [targetYear, setTargetYear] = useState(new Date().getFullYear());
 
-  const { targetMonth, targetYear, monthName } = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const currMonth = today.getMonth();
-    const currYear = today.getFullYear();
-    
-    // Check if there are any upcoming events in the current month
-    const hasUpcomingThisMonth = allEvents.some(event => {
-       if (!event.startDate) return false;
-       const eventDate = new Date(event.startDate);
-       return eventDate >= today && eventDate.getMonth() === currMonth && eventDate.getFullYear() === currYear;
-    });
-
-    let tMonth = currMonth;
-    let tYear = currYear;
-
-    if (!hasUpcomingThisMonth && allEvents.length > 0) {
-        // Find if next month has events
-        tMonth = (currMonth + 1) % 12;
-        if (currMonth === 11) tYear = currYear + 1;
-    }
-
+  const monthName = useMemo(() => {
     const mNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    return { targetMonth: tMonth, targetYear: tYear, monthName: mNames[tMonth] };
-  }, [allEvents]);
+    return mNames[targetMonth];
+  }, [targetMonth]);
+
+  useEffect(() => {
+    const fetchMonthEvents = async () => {
+      try {
+        const res = await fetch(`/api/events?action=calendar&month=${targetMonth}&year=${targetYear}`);
+        const data = await res.json();
+        if (data.success) {
+          setCalendarEvents(data.events);
+          
+          // Auto-advance month if no events in current month (only if it's the first load essentially)
+          if (data.events.length === 0) {
+              const today = new Date();
+              if (targetMonth === today.getMonth() && targetYear === today.getFullYear()) {
+                  setTargetMonth((today.getMonth() + 1) % 12);
+                  if (today.getMonth() === 11) setTargetYear(today.getFullYear() + 1);
+              }
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching calendar events for home page", e);
+      }
+    };
+    fetchMonthEvents();
+  }, [targetMonth, targetYear]);
 
   const calendarDates = useMemo(() => {
-      return getCalendarDays(targetYear, targetMonth, allEvents, 'dates');
-  }, [getCalendarDays, targetMonth, targetYear, allEvents]);
+        const firstDayOfMonth = new Date(targetYear, targetMonth, 1).getDay();
+        const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+        const days = [];
+
+        const daysInPrevMonth = new Date(targetYear, targetMonth, 0).getDate();
+        for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+            days.push({ day: daysInPrevMonth - i, currentMonth: false, events: [] });
+        }
+
+        const dateMap = {};
+        calendarEvents.forEach(event => {
+            if (event.expandedDates) {
+                event.expandedDates.forEach(dateStr => {
+                    if (!dateMap[dateStr]) dateMap[dateStr] = [];
+                    dateMap[dateStr].push(event);
+                });
+            }
+        });
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            const currentDayStr = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            const dayEvents = dateMap[currentDayStr] || [];
+            days.push({
+                day: i,
+                currentMonth: true,
+                hasEvent: dayEvents.length > 0,
+                events: dayEvents
+            });
+        }
+
+        const remaining = 42 - days.length;
+        for (let i = 1; i <= remaining; i++) {
+            days.push({ day: i, currentMonth: false, hasEvent: false, events: [] });
+        }
+        return days;
+  }, [calendarEvents, targetMonth, targetYear]);
 
   const eventList = useMemo(() => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      return allEvents
-        .filter(event => {
-            if (!event.startDate) return false;
-            const ed = new Date(event.startDate);
-            return ed.getMonth() === targetMonth && ed.getFullYear() === targetYear && ed >= today;
-        })
-        .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+      
+      const occurrencesList = [];
+      calendarEvents.forEach(event => {
+          if (!event.expandedDates) return;
+          event.expandedDates.forEach(occStr => {
+              const [y, m, d] = occStr.split('-').map(Number);
+              const ed = new Date(y, m - 1, d);
+              
+              if (ed.getMonth() === targetMonth && ed.getFullYear() === targetYear && ed >= today) {
+                  const schedule = event.schedules?.[0] || {};
+                  occurrencesList.push({
+                      ...event,
+                      occurrenceDate: ed,
+                      occurrenceId: `${event._id}-${occStr}`,
+                      time: schedule.startTime ? `${schedule.startTime} ${schedule.endTime ? '- ' + schedule.endTime : ''}` : ''
+                  });
+              }
+          });
+      });
+
+      return occurrencesList
+        .sort((a, b) => a.occurrenceDate - b.occurrenceDate)
         .slice(0, 4)
         .map(event => {
-            const ed = new Date(event.startDate);
+            const ed = event.occurrenceDate;
             let tagClass = "outreach";
             const cat = event.category?.toLowerCase() || '';
             if (cat.includes("pro-life") || cat.includes("family")) tagClass = "prolife";
@@ -56,17 +110,17 @@ export default function Events() {
             else if (cat.includes("formation") || cat.includes("evangelization")) tagClass = "family";
             
             return {
-                id: event.id,
+                id: event.occurrenceId,
                 month: monthName.substring(0, 3).toUpperCase(),
                 day: ed.getDate().toString().padStart(2, '0'),
                 tag: event.category ? event.category.toUpperCase() : "EVENT",
                 tagClass,
                 title: event.title,
                 date: `${monthName} ${ed.getDate()}, ${ed.getFullYear()} ${event.time ? '• ' + event.time : ''}`,
-                location: event.location
+                location: event.city ? `${event.city}, ${event.state}` : event.venue
             };
         });
-  }, [allEvents, targetMonth, targetYear, monthName]);
+  }, [calendarEvents, targetMonth, targetYear, monthName]);
 
   const tagStyles = {
     prolife: "bg-[#fff2dc] text-[#cb7c00]",

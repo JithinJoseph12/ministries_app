@@ -49,6 +49,13 @@ export default function MinistriesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [selectedMinistry, setSelectedMinistry] = useState(null);
+    
+    // Pagination and Stats state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, uniqueCategories: 0 });
+    const limit = 10;
 
     const getCategoryIcon = (category, size = 14) => {
         if (!category) return <Church size={size} />;
@@ -84,55 +91,70 @@ export default function MinistriesPage() {
         }
     };
 
-    useEffect(() => {
-        const fetchMinistries = async () => {
-            try {
-                const res = await fetch('/api/ministries');
-                const data = await res.json();
-                if (data.success) {
-                    const mappedMinistries = data.ministries.map(m => {
-                        const styleMap = {
-                            'Pro-Life': { bg: 'bg-rose-100', text: 'text-rose-600' },
-                            'Youth': { bg: 'bg-sky-100', text: 'text-sky-600' },
-                            'Family': { bg: 'bg-emerald-100', text: 'text-emerald-600' },
-                            'Evangelization': { bg: 'bg-amber-100', text: 'text-amber-600' },
-                            'Men': { bg: 'bg-indigo-100', text: 'text-indigo-600' },
-                            'Women': { bg: 'bg-fuchsia-100', text: 'text-fuchsia-600' },
-                            'Mission': { bg: 'bg-teal-100', text: 'text-teal-600' },
-                            'Children': { bg: 'bg-yellow-100', text: 'text-yellow-600' },
-                            'Prayer': { bg: 'bg-purple-100', text: 'text-purple-600' },
-                            'Music': { bg: 'bg-pink-100', text: 'text-pink-600' },
-                            'Default': { bg: 'bg-slate-100', text: 'text-slate-600' }
-                        };
-                        
-                        const styleKey = Object.keys(styleMap).find(key => m.category.includes(key)) || 'Default';
-                        const style = styleMap[styleKey];
+    const fetchMinistries = async (page = 1) => {
+        setIsLoading(true);
+        try {
+            const queryParams = new URLSearchParams({
+                page,
+                limit,
+                search: searchTerm,
+                category: selectedCategory,
+                status: selectedStatus
+            });
+            const res = await fetch(`/api/ministries?${queryParams}`);
+            const data = await res.json();
+            if (data.success) {
+                const mappedMinistries = data.ministries.map(m => {
+                    const styleMap = {
+                        'Pro-Life': { bg: 'bg-rose-100', text: 'text-rose-600' },
+                        'Youth': { bg: 'bg-sky-100', text: 'text-sky-600' },
+                        'Family': { bg: 'bg-emerald-100', text: 'text-emerald-600' },
+                        'Evangelization': { bg: 'bg-amber-100', text: 'text-amber-600' },
+                        'Men': { bg: 'bg-indigo-100', text: 'text-indigo-600' },
+                        'Women': { bg: 'bg-fuchsia-100', text: 'text-fuchsia-600' },
+                        'Mission': { bg: 'bg-teal-100', text: 'text-teal-600' },
+                        'Children': { bg: 'bg-yellow-100', text: 'text-yellow-600' },
+                        'Prayer': { bg: 'bg-purple-100', text: 'text-purple-600' },
+                        'Music': { bg: 'bg-pink-100', text: 'text-pink-600' },
+                        'Default': { bg: 'bg-slate-100', text: 'text-slate-600' }
+                    };
+                    
+                    const styleKey = Object.keys(styleMap).find(key => m.category?.includes(key)) || 'Default';
+                    const style = styleMap[styleKey];
 
-                        return {
-                            id: m._id,
-                            name: m.name,
-                            category: m.category,
-                            leader: m.leader || 'Unassigned',
-                            location: m.primaryLocation || 'Not specified',
-                            events: m.events || 0,
-                            status: m.status || 'Active',
-                            iconBg: style.bg,
-                            iconColor: style.text,
-                            icon: getCategoryIcon(m.category, 24),
-                            fullData: m
-                        };
-                    });
-                    setMinistries(mappedMinistries);
+                    return {
+                        id: m._id,
+                        name: m.name,
+                        category: m.category,
+                        leader: m.leader || 'Unassigned',
+                        location: m.primaryLocation || 'Not specified',
+                        events: m.events || 0,
+                        status: m.status || 'Active',
+                        iconBg: style.bg,
+                        iconColor: style.text,
+                        icon: getCategoryIcon(m.category, 24),
+                        fullData: m
+                    };
+                });
+                setMinistries(mappedMinistries);
+                
+                if (data.stats) setStats(data.stats);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.totalPages || 1);
+                    setTotalItems(data.pagination.totalItems || 0);
+                    setCurrentPage(data.pagination.page || 1);
                 }
-            } catch (error) {
-                console.error("Error fetching ministries:", error);
-            } finally {
-                setIsLoading(false);
             }
-        };
+        } catch (error) {
+            console.error("Error fetching ministries:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-        fetchMinistries();
-    }, []);
+    useEffect(() => {
+        fetchMinistries(currentPage);
+    }, [currentPage]);
 
     const getStatusColor = (status) => {
         return status === 'Active' 
@@ -140,19 +162,47 @@ export default function MinistriesPage() {
             : 'bg-amber-100 text-amber-700 border-amber-200';
     };
 
-    const filteredMinistries = ministries.filter(m => {
-        const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              m.location.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === 'All Categories' || m.category.includes(selectedCategory);
-        const matchesStatus = selectedStatus === 'All Status' || m.status === selectedStatus;
-        return matchesSearch && matchesCategory && matchesStatus;
-    });
+    const handleApplyFilters = () => {
+        if (currentPage === 1) {
+            fetchMinistries(1);
+        } else {
+            setCurrentPage(1);
+        }
+    };
 
-    const totalMinistries = ministries.length;
-    const activeMinistries = ministries.filter(m => m.status === 'Active').length;
-    const pendingMinistries = ministries.filter(m => m.status === 'Pending').length;
-    const uniqueCategories = new Set(ministries.map(m => m.category)).size;
-    const activePercentage = totalMinistries > 0 ? Math.round((activeMinistries / totalMinistries) * 100) : 0;
+    const renderPaginationButtons = () => {
+        let pages = [];
+        if (totalPages <= 5) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (currentPage <= 3) {
+                pages = [1, 2, 3, 4, '...', totalPages];
+            } else if (currentPage >= totalPages - 2) {
+                pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+            } else {
+                pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+            }
+        }
+
+        return pages.map((page, index) => (
+            <button 
+                key={index}
+                onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                disabled={page === '...'}
+                className={`${
+                    currentPage === page
+                        ? 'bg-gradient-to-r from-[#082B63] to-[#1E4AA8] text-white shadow-md'
+                        : page === '...'
+                            ? 'bg-transparent text-slate-400 cursor-default px-2'
+                            : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                } ${page !== '...' && 'px-4 py-2'} rounded-xl font-semibold text-sm transition-all`}
+            >
+                {page}
+            </button>
+        ));
+    };
+
+    const activePercentage = stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -190,7 +240,7 @@ export default function MinistriesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-slate-500 text-sm font-medium">Total Ministries</p>
-                                <h3 className="text-4xl font-bold mt-2 text-slate-900">{totalMinistries}</h3>
+                                <h3 className="text-4xl font-bold mt-2 text-slate-900">{stats.total}</h3>
                                 <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
                                     <TrendingUp size={12} /> +12% this year
                                 </p>
@@ -205,7 +255,7 @@ export default function MinistriesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-slate-500 text-sm font-medium">Active</p>
-                                <h3 className="text-4xl font-bold mt-2 text-emerald-600">{activeMinistries}</h3>
+                                <h3 className="text-4xl font-bold mt-2 text-emerald-600">{stats.active}</h3>
                                 <p className="text-xs text-slate-500 mt-2">{activePercentage}% of total</p>
                             </div>
                             <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -218,7 +268,7 @@ export default function MinistriesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-slate-500 text-sm font-medium">Pending</p>
-                                <h3 className="text-4xl font-bold mt-2 text-amber-600">{pendingMinistries}</h3>
+                                <h3 className="text-4xl font-bold mt-2 text-amber-600">{stats.pending}</h3>
                                 <p className="text-xs text-slate-500 mt-2">Awaiting review</p>
                             </div>
                             <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -231,7 +281,7 @@ export default function MinistriesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-slate-500 text-sm font-medium">Categories</p>
-                                <h3 className="text-4xl font-bold mt-2 text-slate-900">{uniqueCategories}</h3>
+                                <h3 className="text-4xl font-bold mt-2 text-slate-900">{stats.uniqueCategories}</h3>
                                 <p className="text-xs text-slate-500 mt-2">Across all ministries</p>
                             </div>
                             <div className="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -281,7 +331,9 @@ export default function MinistriesPage() {
                             </select>
                         </div>
                         <div className="lg:col-span-2">
-                            <button className="w-full bg-gradient-to-r from-[#082B63] to-[#1E4AA8] hover:from-[#0B3578] hover:to-[#2563B5] text-white rounded-xl py-3.5 font-semibold transition-all flex items-center justify-center gap-2 shadow-md">
+                            <button 
+                                onClick={handleApplyFilters}
+                                className="w-full bg-gradient-to-r from-[#082B63] to-[#1E4AA8] hover:from-[#0B3578] hover:to-[#2563B5] text-white rounded-xl py-3.5 font-semibold transition-all flex items-center justify-center gap-2 shadow-md">
                                 <Filter size={18} />
                                 Apply Filters
                             </button>
@@ -340,11 +392,11 @@ export default function MinistriesPage() {
                                         <tr>
                                             <td colSpan="6" className="text-center py-8 text-slate-500">Loading ministries...</td>
                                         </tr>
-                                    ) : filteredMinistries.length === 0 ? (
+                                    ) : ministries.length === 0 ? (
                                         <tr>
                                             <td colSpan="6" className="text-center py-8 text-slate-500">No ministries found matching your criteria.</td>
                                         </tr>
-                                    ) : filteredMinistries.map((ministry, index) => (
+                                    ) : ministries.map((ministry, index) => (
                                         <tr key={ministry.id} className={`border-t border-slate-100 hover:bg-slate-50/80 transition-colors group ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
@@ -416,9 +468,9 @@ export default function MinistriesPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
                             {isLoading ? (
                                 <div className="col-span-full text-center py-8 text-slate-500">Loading ministries...</div>
-                            ) : filteredMinistries.length === 0 ? (
+                            ) : ministries.length === 0 ? (
                                 <div className="col-span-full text-center py-8 text-slate-500">No ministries found matching your criteria.</div>
-                            ) : filteredMinistries.map((ministry) => (
+                            ) : ministries.map((ministry) => (
                                 <div key={ministry.id} className="group bg-white border border-slate-200 rounded-xl p-5 hover:shadow-xl hover:border-[#D6A646]/30 transition-all duration-300">
                                     <div className="flex items-start justify-between mb-4">
                                         <div className={`w-14 h-14 rounded-2xl ${ministry.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
@@ -478,20 +530,33 @@ export default function MinistriesPage() {
                     )}
 
                     {/* Pagination */}
-                    <div className="px-6 py-5 border-t border-slate-100 flex justify-between items-center bg-slate-50/30">
-                        <p className="text-sm text-slate-500 font-medium">Showing 1-{filteredMinistries.length} of {filteredMinistries.length} ministries</p>
-                        <div className="flex gap-2">
-                            <button className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1">
-                                <ChevronLeft size={16} /> Previous
-                            </button>
-                            <button className="bg-gradient-to-r from-[#082B63] to-[#1E4AA8] text-white px-4 py-2 rounded-xl font-semibold text-sm shadow-md">1</button>
-                            <button className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all px-4 py-2 rounded-xl font-semibold text-sm">2</button>
-                            <button className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all px-4 py-2 rounded-xl font-semibold text-sm">3</button>
-                            <button className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1">
-                                Next <ChevronRight size={16} />
-                            </button>
+                    {totalPages > 0 && (
+                        <div className="px-6 py-5 border-t border-slate-100 flex justify-between items-center bg-slate-50/30">
+                            <p className="text-sm text-slate-500 font-medium">
+                                Showing {ministries.length > 0 ? (currentPage - 1) * limit + 1 : 0}-
+                                {Math.min(currentPage * limit, totalItems)} of {totalItems} ministries
+                            </p>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1"
+                                >
+                                    <ChevronLeft size={16} /> Previous
+                                </button>
+                                
+                                {renderPaginationButtons()}
+                                
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1"
+                                >
+                                    Next <ChevronRight size={16} />
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 

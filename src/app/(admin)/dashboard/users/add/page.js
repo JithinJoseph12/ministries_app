@@ -42,7 +42,7 @@ function AddUserContent() {
     // Fetch all ministries for the dropdown
     const fetchMinistries = async () => {
       try {
-        const res = await fetch("/api/ministries");
+        const res = await fetch("/api/ministries?limit=100");
         const data = await res.json();
         if (data.success) {
           setMinistries(data.ministries);

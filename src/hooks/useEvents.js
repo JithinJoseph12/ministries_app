@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 export function useEvents() {
     const [events, setEvents] = useState([]);
@@ -10,22 +10,38 @@ export function useEvents() {
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const res = await fetch('/api/events');
+                const res = await fetch('/api/events?status=Published&limit=100');
                 const data = await res.json();
                 if (data.success) {
                     const mappedEvents = data.events.map(e => {
-                        let dateStr = '';
-                        if (e.startDate) {
-                            const startD = new Date(e.startDate);
-                            const startStr = startD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                            dateStr = startStr;
+                        let dateStr = 'No schedule';
+                        let mainStartDate = null;
+                        let mainEndDate = null;
+                        let mainTime = '';
+                        if (e.schedules && e.schedules.length > 0) {
+                            const firstSchedule = e.schedules[0];
+                            mainStartDate = firstSchedule.startDate;
+                            mainEndDate = firstSchedule.endDate;
+                            mainTime = firstSchedule.startTime ? `${firstSchedule.startTime} ${firstSchedule.endTime ? '- ' + firstSchedule.endTime : ''}` : '';
 
-                            if (e.endDate && e.endDate !== e.startDate) {
-                                const endD = new Date(e.endDate);
-                                const endStr = endD.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                                dateStr = `${startStr} – ${endStr}`;
+                            if (e.schedules.length > 1) {
+                                dateStr = 'Multiple Occurrences';
+                            } else if (e.recurrenceSummary) {
+                                dateStr = e.recurrenceSummary;
                             } else {
-                                dateStr = `${startStr}, ${startD.getFullYear()}`;
+                                const startD = new Date(firstSchedule.startDate);
+                                startD.setMinutes(startD.getMinutes() + startD.getTimezoneOffset());
+                                const startStr = startD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                dateStr = startStr;
+
+                                if (firstSchedule.endDate && firstSchedule.endDate !== firstSchedule.startDate) {
+                                    const endD = new Date(firstSchedule.endDate);
+                                    endD.setMinutes(endD.getMinutes() + endD.getTimezoneOffset());
+                                    const endStr = endD.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                    dateStr = `${startStr} – ${endStr}`;
+                                } else {
+                                    dateStr = `${startStr}, ${startD.getFullYear()}`;
+                                }
                             }
                         }
 
@@ -34,9 +50,9 @@ export function useEvents() {
                             title: e.title,
                             ministry: e.hostMinistry || 'Unassigned',
                             date: dateStr,
-                            startDate: e.startDate,
-                            endDate: e.endDate,
-                            time: e.startTime ? `${e.startTime} ${e.endTime ? '- ' + e.endTime : ''}` : '',
+                            startDate: mainStartDate,
+                            endDate: mainEndDate,
+                            time: mainTime,
                             location: e.city && e.state ? `${e.city}, ${e.state}` : e.venue || 'TBD',
                             address: e.address || '',
                             category: e.category,
@@ -62,7 +78,7 @@ export function useEvents() {
         fetchEvents();
     }, []);
 
-    // Helper to generate calendar grid data
+    // Helper to generate calendar grid data from backend pre-expanded occurrences
     const getCalendarDays = (year, month, filteredEvents = events, fillStyle = 'nulls') => {
         const firstDayOfMonth = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -79,16 +95,21 @@ export function useEvents() {
             }
         }
 
+        // Using O(1) Lookup: bucket events by date string
+        const dateMap = {};
+        filteredEvents.forEach(event => {
+            if (event.fullData && event.fullData.expandedDates) {
+                event.fullData.expandedDates.forEach(dateStr => {
+                    if (!dateMap[dateStr]) dateMap[dateStr] = [];
+                    dateMap[dateStr].push(event);
+                });
+            }
+        });
+
         for (let i = 1; i <= daysInMonth; i++) {
-            const dayEvents = filteredEvents.filter(event => {
-                if (!event.startDate) return false;
-                const eventDate = new Date(event.startDate);
-                return (
-                    eventDate.getDate() === i &&
-                    eventDate.getMonth() === month &&
-                    eventDate.getFullYear() === year
-                );
-            });
+            const currentDayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            
+            const dayEvents = dateMap[currentDayStr] || [];
             
             days.push({
                 day: i,

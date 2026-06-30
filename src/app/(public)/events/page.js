@@ -1,7 +1,7 @@
 // app/events/page.js
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Navbar from '@/src/components/layout/Navbar';
@@ -34,121 +34,121 @@ import { GiDove } from "react-icons/gi";
 import { useEvents } from '@/src/hooks/useEvents';
 
 // Event Data
-const _allEvents = [
-    {
-        id: 1,
-        title: "Eucharistic Miracles Exhibit",
-        date: "May 24 – Jun 15, 2026",
-        startDate: "2026-05-24",
-        endDate: "2026-06-15",
-        time: "10:00 AM - 5:00 PM",
-        location: "MRH – St. Carlo Shrine",
-        address: "Malvern Retreat House, Malvern, PA",
-        description: "Explore over 120 Eucharistic miracles from around the world in the first permanent exhibit of Saint Carlo Acutis.",
-        category: "Faith Formation",
-        ministry: "Malvern Retreat House",
-        image: "/images/events/eucharistic-miracles.jpg",
-        featured: true,
-    },
-    {
-        id: 2,
-        title: "Men Through Mary Retreat",
-        date: "May 30, 2026",
-        startDate: "2026-05-30",
-        time: "8:00 AM - 3:00 PM",
-        location: "Mid-Atlantic Knights of Immaculata",
-        address: "Malvern Retreat House, Malvern, PA",
-        description: "A day of prayer, reflection, and brotherhood to help men grow in holiness through the intercession of Our Lady.",
-        category: "Men's Ministries",
-        ministry: "Mid-Atlantic Knights of Immaculata",
-        image: "/images/events/men-retreat.jpg",
-        featured: true,
-    },
-    {
-        id: 3,
-        title: "Family Prayer Evening",
-        date: "June 3, 2026",
-        startDate: "2026-06-03",
-        time: "7:00 PM",
-        location: "Militia of Immaculata Village",
-        address: "St. Carlos Center",
-        description: "An evening of adoration, rosary, and Mass for families to grow together in faith and devotion.",
-        category: "Family",
-        ministry: "Militia of Immaculata Village",
-        image: "/images/events/family-prayer.jpg",
-        featured: true,
-    },
-    {
-        id: 4,
-        title: "Pro-Life Prayer Vigil",
-        date: "June 7, 2026",
-        startDate: "2026-06-07",
-        time: "9:00 AM",
-        location: "Life Runners",
-        address: "Philadelphia, PA",
-        description: "Join us for a peaceful prayer vigil to defend the sanctity of human life from conception to natural death.",
-        category: "Pro-Life",
-        ministry: "Life Runners",
-        image: "/images/events/pro-life-vigil.jpg",
-        featured: true,
-    },
-    {
-        id: 5,
-        title: "Formation Night",
-        date: "May 28, 2026",
-        startDate: "2026-05-28",
-        time: "7:00 PM",
-        location: "House of God's Light",
-        address: "Malvern, PA",
-        description: "Deepen your faith with an evening of Catholic teaching, discussion, and fellowship.",
-        category: "Faith Formation",
-        ministry: "House of God's Light",
-        image: "/images/events/formation-night.jpg",
-        featured: false,
-    },
-    {
-        id: 6,
-        title: "Youth Rally",
-        date: "June 12, 2026",
-        startDate: "2026-06-12",
-        time: "6:00 PM",
-        location: "Bishop Shanahan HS",
-        address: "Downingtown, PA",
-        description: "An energetic evening of music, talks, and adoration for high school teens.",
-        category: "Youth",
-        ministry: "Bishop Shanahan HS Theology Dept.",
-        image: "/images/events/youth-rally.jpg",
-        featured: false,
-    },
-    {
-        id: 7,
-        title: "Outreach Food Drive",
-        date: "June 14, 2026",
-        startDate: "2026-06-14",
-        time: "9:00 AM - 1:00 PM",
-        location: "Society of St. Vincent de Paul",
-        address: "Philadelphia, PA",
-        description: "Help collect and distribute food to families in need across the Philadelphia area.",
-        category: "Outreach",
-        ministry: "Society of Saint Vincent de Paul",
-        image: "/images/events/food-drive.jpg",
-        featured: false,
-    },
-    {
-        id: 8,
-        title: "Evangelization Workshop",
-        date: "June 20, 2026",
-        startDate: "2026-06-20",
-        time: "9:00 AM - 4:00 PM",
-        location: "In His Sign Ministry",
-        address: "Philadelphia, PA",
-        description: "Learn practical skills for sharing the Catholic faith with others in your daily life.",
-        category: "Evangelization",
-        ministry: "In His Sign Ministry",
-        image: "/images/events/evangelization-workshop.jpg",
-        featured: false,
-    },
-];
+// const _allEvents = [
+//     {
+//         id: 1,
+//         title: "Eucharistic Miracles Exhibit",
+//         date: "May 24 – Jun 15, 2026",
+//         startDate: "2026-05-24",
+//         endDate: "2026-06-15",
+//         time: "10:00 AM - 5:00 PM",
+//         location: "MRH – St. Carlo Shrine",
+//         address: "Malvern Retreat House, Malvern, PA",
+//         description: "Explore over 120 Eucharistic miracles from around the world in the first permanent exhibit of Saint Carlo Acutis.",
+//         category: "Faith Formation",
+//         ministry: "Malvern Retreat House",
+//         image: "/images/events/eucharistic-miracles.jpg",
+//         featured: true,
+//     },
+//     {
+//         id: 2,
+//         title: "Men Through Mary Retreat",
+//         date: "May 30, 2026",
+//         startDate: "2026-05-30",
+//         time: "8:00 AM - 3:00 PM",
+//         location: "Mid-Atlantic Knights of Immaculata",
+//         address: "Malvern Retreat House, Malvern, PA",
+//         description: "A day of prayer, reflection, and brotherhood to help men grow in holiness through the intercession of Our Lady.",
+//         category: "Men's Ministries",
+//         ministry: "Mid-Atlantic Knights of Immaculata",
+//         image: "/images/events/men-retreat.jpg",
+//         featured: true,
+//     },
+//     {
+//         id: 3,
+//         title: "Family Prayer Evening",
+//         date: "June 3, 2026",
+//         startDate: "2026-06-03",
+//         time: "7:00 PM",
+//         location: "Militia of Immaculata Village",
+//         address: "St. Carlos Center",
+//         description: "An evening of adoration, rosary, and Mass for families to grow together in faith and devotion.",
+//         category: "Family",
+//         ministry: "Militia of Immaculata Village",
+//         image: "/images/events/family-prayer.jpg",
+//         featured: true,
+//     },
+//     {
+//         id: 4,
+//         title: "Pro-Life Prayer Vigil",
+//         date: "June 7, 2026",
+//         startDate: "2026-06-07",
+//         time: "9:00 AM",
+//         location: "Life Runners",
+//         address: "Philadelphia, PA",
+//         description: "Join us for a peaceful prayer vigil to defend the sanctity of human life from conception to natural death.",
+//         category: "Pro-Life",
+//         ministry: "Life Runners",
+//         image: "/images/events/pro-life-vigil.jpg",
+//         featured: true,
+//     },
+//     {
+//         id: 5,
+//         title: "Formation Night",
+//         date: "May 28, 2026",
+//         startDate: "2026-05-28",
+//         time: "7:00 PM",
+//         location: "House of God's Light",
+//         address: "Malvern, PA",
+//         description: "Deepen your faith with an evening of Catholic teaching, discussion, and fellowship.",
+//         category: "Faith Formation",
+//         ministry: "House of God's Light",
+//         image: "/images/events/formation-night.jpg",
+//         featured: false,
+//     },
+//     {
+//         id: 6,
+//         title: "Youth Rally",
+//         date: "June 12, 2026",
+//         startDate: "2026-06-12",
+//         time: "6:00 PM",
+//         location: "Bishop Shanahan HS",
+//         address: "Downingtown, PA",
+//         description: "An energetic evening of music, talks, and adoration for high school teens.",
+//         category: "Youth",
+//         ministry: "Bishop Shanahan HS Theology Dept.",
+//         image: "/images/events/youth-rally.jpg",
+//         featured: false,
+//     },
+//     {
+//         id: 7,
+//         title: "Outreach Food Drive",
+//         date: "June 14, 2026",
+//         startDate: "2026-06-14",
+//         time: "9:00 AM - 1:00 PM",
+//         location: "Society of St. Vincent de Paul",
+//         address: "Philadelphia, PA",
+//         description: "Help collect and distribute food to families in need across the Philadelphia area.",
+//         category: "Outreach",
+//         ministry: "Society of Saint Vincent de Paul",
+//         image: "/images/events/food-drive.jpg",
+//         featured: false,
+//     },
+//     {
+//         id: 8,
+//         title: "Evangelization Workshop",
+//         date: "June 20, 2026",
+//         startDate: "2026-06-20",
+//         time: "9:00 AM - 4:00 PM",
+//         location: "In His Sign Ministry",
+//         address: "Philadelphia, PA",
+//         description: "Learn practical skills for sharing the Catholic faith with others in your daily life.",
+//         category: "Evangelization",
+//         ministry: "In His Sign Ministry",
+//         image: "/images/events/evangelization-workshop.jpg",
+//         featured: false,
+//     },
+// ];
 
 // Ministries with upcoming events
 const ministriesWithEvents = [
@@ -233,37 +233,95 @@ export default function EventsPage() {
 
     const { daysInMonth, startingDayOfWeek, today, month: currentMonth, year: currentYear } = getCurrentMonthDates();
 
+    const expandedAllEvents = useMemo(() => {
+        const { generateOccurrencesForWindow } = require('@/src/lib/recurrence');
+        const formatYMD = (d) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+        const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+        const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0);
+        
+        const startStr = formatYMD(startOfMonth);
+        const endStr = formatYMD(endOfMonth);
+
+        return allEvents.map(e => {
+            if (!e.fullData || !e.fullData.schedules || e.fullData.schedules.length === 0) {
+                if (e.startDate) {
+                    const d = new Date(e.startDate);
+                    if (d.getMonth() === selectedMonth && d.getFullYear() === selectedYear) {
+                        return { ...e, fullData: { ...e.fullData, expandedDates: [formatYMD(d)] } };
+                    }
+                }
+                return { ...e, fullData: { ...e.fullData, expandedDates: [] } };
+            }
+
+            let allDates = new Set();
+            e.fullData.schedules.forEach(schedule => {
+                const dates = generateOccurrencesForWindow(schedule, startStr, endStr);
+                dates.forEach(d => allDates.add(d));
+            });
+
+            return {
+                ...e,
+                fullData: {
+                    ...e.fullData,
+                    expandedDates: Array.from(allDates)
+                }
+            };
+        });
+    }, [allEvents, selectedMonth, selectedYear]);
+
     // Filter events based on search, category, and time
-    const filteredEvents = allEvents.filter(event => {
+    const filteredEvents = expandedAllEvents.filter(event => {
         const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
             event.description.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = selectedCategory === 'All' || event.category === selectedCategory;
 
-        let matchesTime = true;
-        const eventDate = new Date(event.startDate);
+        let matchesTime = false;
         const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
         const thisWeekEnd = new Date();
         thisWeekEnd.setDate(todayDate.getDate() + 7);
-        const thisMonthEnd = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
 
-        if (selectedTimeFilter === 'Today') {
-            matchesTime = eventDate.toDateString() === todayDate.toDateString();
-        } else if (selectedTimeFilter === 'This Week') {
-            matchesTime = eventDate >= todayDate && eventDate <= thisWeekEnd;
-        } else if (selectedTimeFilter === 'This Month') {
-            matchesTime = eventDate.getMonth() === todayDate.getMonth() && eventDate.getFullYear() === todayDate.getFullYear();
+        if (event.fullData && event.fullData.schedules && event.fullData.schedules.length > 0) {
+            const { generateOccurrencesForWindow } = require('@/src/lib/recurrence');
+            
+            // Define window based on selected time filter
+            let startStr = todayDate.toISOString().split('T')[0];
+            let endStr = new Date(todayDate.getFullYear() + 2, todayDate.getMonth(), todayDate.getDate()).toISOString().split('T')[0];
+            
+            if (selectedTimeFilter === 'Today') {
+                endStr = startStr;
+            } else if (selectedTimeFilter === 'This Week') {
+                endStr = thisWeekEnd.toISOString().split('T')[0];
+            } else if (selectedTimeFilter === 'This Month') {
+                const endOfMonthTime = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
+                endStr = endOfMonthTime.toISOString().split('T')[0];
+            }
+
+            matchesTime = event.fullData.schedules.some(schedule => {
+                const occurrences = generateOccurrencesForWindow(schedule, startStr, endStr);
+                return occurrences.length > 0;
+            });
+        } else {
+            // fallback if no schedules exist
+            matchesTime = true;
         }
 
         return matchesSearch && matchesCategory && matchesTime;
     });
 
-    const featuredEvents = allEvents.filter(event => event.featured);
-    const selectedEvent = selectedEventId ? allEvents.find(e => e.id === selectedEventId) : featuredEvents[0];
+    const featuredEvents = expandedAllEvents.filter(event => event.featured);
+    const displayFeaturedEvents = featuredEvents.length > 0 ? featuredEvents : expandedAllEvents.slice(0, 4);
+    const selectedEvent = selectedEventId ? expandedAllEvents.find(e => e.id === selectedEventId) : displayFeaturedEvents[0];
 
     // Calendar days generation
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    const calendarDays = getCalendarDays(selectedYear, selectedMonth, allEvents, 'nulls');
+    const calendarDays = getCalendarDays(selectedYear, selectedMonth, expandedAllEvents, 'nulls');
 
     const handlePrevMonth = () => {
         if (selectedMonth === 0) {
@@ -325,6 +383,39 @@ export default function EventsPage() {
             color: "#D6A646",
         },
     ];
+
+    const occurrencesList = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const list = [];
+        filteredEvents.forEach(event => {
+            if (event.fullData && event.fullData.expandedDates) {
+                event.fullData.expandedDates.forEach(occStr => {
+                    const [y, m, d] = occStr.split('-').map(Number);
+                    const ed = new Date(y, m - 1, d);
+                    
+                    if (ed.getMonth() === selectedMonth && ed.getFullYear() === selectedYear && ed >= today) {
+                        list.push({
+                            ...event,
+                            occurrenceDate: ed,
+                            occurrenceId: `${event.id}-${occStr}`
+                        });
+                    }
+                });
+            } else if (event.startDate) {
+                const ed = new Date(event.startDate);
+                if (ed.getMonth() === selectedMonth && ed.getFullYear() === selectedYear && ed >= today) {
+                    list.push({
+                        ...event,
+                        occurrenceDate: ed,
+                        occurrenceId: `${event.id}-single`
+                    });
+                }
+            }
+        });
+        return list.sort((a, b) => a.occurrenceDate - b.occurrenceDate);
+    }, [filteredEvents, selectedMonth, selectedYear]);
 
     return (
         <div className="min-h-screen bg-white">
@@ -695,12 +786,7 @@ export default function EventsPage() {
                             {/* Calendar Grid */}
                             <div className="grid grid-cols-7 gap-px bg-gray-100 border border-gray-100 rounded-xl overflow-hidden">
                                 {calendarDays.map((day, idx) => {
-                                    const eventsForDay = day ? allEvents.filter(event => {
-                                        const eventDate = new Date(event.startDate);
-                                        return eventDate.getDate() === day.day &&
-                                            eventDate.getMonth() === selectedMonth &&
-                                            eventDate.getFullYear() === selectedYear;
-                                    }) : [];
+                                    const eventsForDay = day ? day.events : [];
 
                                     return (
                                         <div
@@ -768,15 +854,15 @@ export default function EventsPage() {
 
                         {/* Events List */}
                         <div className="space-y-0">
-                            {filteredEvents.length > 0 ? (
-                                filteredEvents.slice(0, 4).map((event) => {
-                                    const eventDate = new Date(event.startDate);
+                            {occurrencesList.length > 0 ? (
+                                occurrencesList.slice(0, 4).map((event) => {
+                                    const eventDate = event.occurrenceDate;
                                     const monthName = eventDate.toLocaleString('default', { month: 'short' }).toUpperCase();
                                     const dayNum = eventDate.getDate();
 
                                     return (
                                         <div
-                                            key={event.id}
+                                            key={event.occurrenceId}
                                             onClick={() => setSelectedEventId(event.id)}
                                             className="py-5 border-b border-gray-100 flex items-start gap-4 cursor-pointer group"
                                         >
@@ -792,7 +878,7 @@ export default function EventsPage() {
 
                                                 <div className="flex items-start gap-2 text-xs text-gray-500 mb-1.5">
                                                     <Clock size={13} className="mt-[2px] flex-shrink-0 text-gray-400" />
-                                                    <span>{event.date} {event.time && `• ${event.time}`}</span>
+                                                    <span>{monthName} {dayNum}, {eventDate.getFullYear()} {event.time && `• ${event.time}`}</span>
                                                 </div>
 
                                                 <div className="flex items-start gap-2 text-xs text-gray-500 mb-1.5">
@@ -837,7 +923,7 @@ export default function EventsPage() {
                 <div className="mt-12">
                     <h2 className="font-serif text-2xl font-bold text-[#082B63] mb-6">Featured Events</h2>
                     <div className="grid md:grid-cols-4 gap-6">
-                        {featuredEvents.map((event, index) => (
+                        {displayFeaturedEvents.map((event, index) => (
                             <div key={event.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition flex flex-col">
                                 <div className="h-40 relative flex-shrink-0 overflow-hidden">
                                     <Image
@@ -872,7 +958,7 @@ export default function EventsPage() {
 
                                     <h3 className="font-bold text-lg text-[#082B63]">{event.title}</h3>
                                     <div className="text-xs text-[#D6A646] font-semibold mb-1">
-                                        {new Date(event.startDate).toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                        {event.date}
                                     </div>
                                     <p className="text-sm text-gray-600 mt-1 line-clamp-2">{event.description}</p>
                                     <button className="mt-3 text-[#082B63] font-semibold text-sm hover:underline">

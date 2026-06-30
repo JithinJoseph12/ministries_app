@@ -30,6 +30,7 @@ import {
     LayoutGrid,
     Trash2,
     MoreHorizontal,
+    MoreVertical,
     ChevronDown,
     X,
     Target,
@@ -39,7 +40,6 @@ import {
     Info
 } from 'lucide-react';
 import { GiDove } from "react-icons/gi";
-
 export default function EventsPage() {
     const router = useRouter();
     const today = useMemo(() => new Date(), []);
@@ -53,12 +53,32 @@ export default function EventsPage() {
 
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-    const [events, setEvents] = useState([]);
+    const [calendarEvents, setCalendarEvents] = useState([]);
+    const [paginatedEvents, setPaginatedEvents] = useState([]);
+    const [stats, setStats] = useState({ total: 0, upcoming: 0, draft: 0, completed: 0, upcomingEvents: [] });
     const [isLoading, setIsLoading] = useState(true);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [selectedDateData, setSelectedDateData] = useState(null);
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
+    const [activeDropdownId, setActiveDropdownId] = useState(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (!e.target.closest('.dropdown-container')) {
+                setActiveDropdownId(null);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const limit = 10;
 
     const handleDelete = (id) => {
         setItemToDelete(id);
@@ -77,7 +97,8 @@ export default function EventsPage() {
         try {
             const res = await fetch(`/api/events/${itemToDelete}`, { method: 'DELETE' });
             if (res.ok) {
-                setEvents(prev => prev.filter(e => e.id !== itemToDelete));
+                fetchListEvents();
+                fetchCalendarEvents();
                 setItemToDelete(null);
             } else {
                 alert("Failed to delete event");
@@ -88,68 +109,118 @@ export default function EventsPage() {
         }
     };
 
-    useEffect(() => {
-        const fetchEvents = async () => {
-            try {
-                const res = await fetch('/api/events');
-                const data = await res.json();
-                if (data.success) {
-                    const mappedEvents = data.events.map(e => {
-                        // Create nicely formatted date string
-                        let dateStr = '';
-                        if (e.startDate) {
-                            const startD = new Date(e.startDate);
-                            const startStr = startD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                            dateStr = startStr;
+    const mapEvent = (e) => {
+        let dateStr = 'No schedule';
+        let mainStartDate = null;
+        if (e.schedules && e.schedules.length > 0) {
+            const firstSchedule = e.schedules[0];
+            mainStartDate = firstSchedule.startDate;
 
-                            if (e.endDate && e.endDate !== e.startDate) {
-                                const endD = new Date(e.endDate);
-                                const endStr = endD.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                                dateStr = `${startStr} – ${endStr}`;
-                            } else {
-                                dateStr = `${startStr}, ${startD.getFullYear()}`;
-                            }
-                        }
+            if (e.schedules.length > 1) {
+                dateStr = 'Multiple Occurrences';
+            } else if (e.recurrenceSummary) {
+                dateStr = e.recurrenceSummary;
+            } else {
+                const startD = new Date(firstSchedule.startDate);
+                // Handle potential timezone issue when parsing YYYY-MM-DD
+                startD.setMinutes(startD.getMinutes() + startD.getTimezoneOffset());
+                const startStr = startD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                dateStr = startStr;
 
-                        // Determine Icon
-                        let icon = <CalendarIcon size={20} />;
-                        const cat = e.category?.toLowerCase() || '';
-                        if (cat.includes('formation')) icon = <Cross size={20} />;
-                        else if (cat.includes('men') || cat.includes('family')) icon = <Users size={20} />;
-                        else if (cat.includes('life') || cat.includes('prayer')) icon = <Heart size={20} />;
-                        else if (cat.includes('youth')) icon = <GiDove size={20} />;
-                        else if (cat.includes('outreach') || cat.includes('mission')) icon = <HandHeart size={20} />;
-
-                        return {
-                            id: e._id,
-                            title: e.title,
-                            ministry: e.hostMinistry || 'Unassigned',
-                            date: dateStr,
-                            startDate: e.startDate,
-                            location: e.city && e.state ? `${e.city}, ${e.state}` : e.venue || 'TBD',
-                            category: e.category,
-                            status: e.status || 'Published',
-                            icon: icon,
-                            fullData: e
-                        };
-                    });
-                    setEvents(mappedEvents);
+                if (firstSchedule.endDate && firstSchedule.endDate !== firstSchedule.startDate) {
+                    const endD = new Date(firstSchedule.endDate);
+                    endD.setMinutes(endD.getMinutes() + endD.getTimezoneOffset());
+                    const endStr = endD.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    dateStr = `${startStr} – ${endStr}`;
+                } else {
+                    dateStr = `${startStr}, ${startD.getFullYear()}`;
                 }
-            } catch (error) {
-                console.error("Error fetching events:", error);
-            } finally {
-                setIsLoading(false);
             }
+        }
+
+        let icon = <CalendarIcon size={20} />;
+        const cat = e.category?.toLowerCase() || '';
+        if (cat.includes('formation')) icon = <Cross size={20} />;
+        else if (cat.includes('men') || cat.includes('family')) icon = <Users size={20} />;
+        else if (cat.includes('life') || cat.includes('prayer')) icon = <Heart size={20} />;
+        else if (cat.includes('youth')) icon = <GiDove size={20} />;
+        else if (cat.includes('outreach') || cat.includes('mission')) icon = <HandHeart size={20} />;
+
+        return {
+            id: e._id,
+            title: e.title,
+            ministry: e.hostMinistry || 'Unassigned',
+            date: dateStr,
+            startDate: mainStartDate,
+            location: e.city && e.state ? `${e.city}, ${e.state}` : e.venue || 'TBD',
+            category: e.category,
+            status: e.status || 'Published',
+            icon: icon,
+            fullData: e
         };
+    };
 
-        fetchEvents();
-    }, []);
+    const fetchCalendarEvents = async () => {
+        try {
+            const res = await fetch(`/api/events?action=calendar&month=${selectedMonth}&year=${selectedYear}`);
+            const data = await res.json();
+            if (data.success) {
+                setCalendarEvents(data.events.map(mapEvent));
+            }
+        } catch (error) {
+            console.error("Error fetching calendar events:", error);
+        }
+    };
 
-    const upcomingEvents = events.filter(e => e.status === 'Published').slice(0, 5);
-    const totalEvents = events.length;
-    const upcomingCount = events.filter(e => new Date(e.startDate) > new Date() && e.status === 'Published').length;
-    const draftCount = events.filter(e => e.status === 'Draft').length;
-    const completedCount = events.filter(e => new Date(e.startDate) < new Date() && e.status === 'Published').length;
+    const fetchListEvents = async () => {
+        setIsLoading(true);
+        try {
+            const queryParams = new URLSearchParams({
+                action: 'list',
+                page: currentPage,
+                limit,
+                search: searchTerm,
+                category: selectedCategory,
+                ministry: selectedMinistry,
+                status: selectedStatus
+            });
+            const res = await fetch(`/api/events?${queryParams}`);
+            const data = await res.json();
+            if (data.success) {
+                setPaginatedEvents(data.events.map(mapEvent));
+                setStats(data.stats);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.totalPages || 1);
+                    setTotalItems(data.pagination.totalItems || 0);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching list events:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCalendarEvents();
+    }, [selectedMonth, selectedYear]);
+
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchListEvents();
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [currentPage, searchTerm, selectedCategory, selectedMinistry, selectedStatus]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedCategory, selectedMinistry, selectedStatus]);
+
+    const upcomingEventsList = stats.upcomingEvents ? stats.upcomingEvents.map(mapEvent) : [];
+    const totalEvents = stats.total;
+    const upcomingCount = stats.upcoming;
+    const draftCount = stats.draft;
+    const completedCount = stats.completed;
 
     const getStatusColor = (status) => {
         return status === 'Published'
@@ -169,19 +240,36 @@ export default function EventsPage() {
         return colors[category] || 'bg-slate-100 text-slate-700 border-slate-200';
     };
 
-    const filteredEvents = events.filter(event => {
-        const searchLower = searchTerm.toLowerCase();
-        const matchesSearch = searchTerm === '' ||
-            event.title?.toLowerCase().includes(searchLower) ||
-            event.ministry?.toLowerCase().includes(searchLower) ||
-            event.location?.toLowerCase().includes(searchLower);
+    const renderPaginationButtons = () => {
+        let pages = [];
+        if (totalPages <= 5) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (currentPage <= 3) {
+                pages = [1, 2, 3, 4, '...', totalPages];
+            } else if (currentPage >= totalPages - 2) {
+                pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+            } else {
+                pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+            }
+        }
 
-        const matchesCategory = selectedCategory === 'All Categories' || event.category === selectedCategory;
-        const matchesMinistry = selectedMinistry === 'All Ministries' || event.ministry === selectedMinistry;
-        const matchesStatus = selectedStatus === 'All Status' || event.status === selectedStatus;
-
-        return matchesSearch && matchesCategory && matchesMinistry && matchesStatus;
-    });
+        return pages.map((page, index) => (
+            <button
+                key={index}
+                onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                disabled={page === '...'}
+                className={`${currentPage === page
+                        ? 'bg-gradient-to-r from-[#082B63] to-[#1E4AA8] text-white shadow-md'
+                        : page === '...'
+                            ? 'bg-transparent text-slate-400 cursor-default px-2'
+                            : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                    } ${page !== '...' && 'px-4 py-2'} rounded-xl font-semibold text-sm transition-all`}
+            >
+                {page}
+            </button>
+        ));
+    };
 
     // Calendar days generation for May 2026
     const getCalendarDays = () => {
@@ -193,26 +281,26 @@ export default function EventsPage() {
             days.push(null);
         }
 
+        // Using O(1) Lookup: bucket events by date string
+        const dateMap = {};
+        calendarEvents.forEach(event => {
+            if (event.fullData && event.fullData.expandedDates) {
+                event.fullData.expandedDates.forEach(dateStr => {
+                    if (!dateMap[dateStr]) dateMap[dateStr] = [];
+                    dateMap[dateStr].push(event);
+                });
+            }
+        });
+
         for (let i = 1; i <= daysInMonth; i++) {
-            const dayEvents = filteredEvents.filter(event => {
+            const currentDayStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
 
-                const eventDate = new Date(event.startDate);
+            const dayEvents = dateMap[currentDayStr] || [];
 
-                return (
-                    eventDate.getDate() === i &&
-                    eventDate.getMonth() === selectedMonth &&
-                    eventDate.getFullYear() === selectedYear
-                );
-
-            });
             days.push({
-
                 day: i,
-
                 hasEvent: dayEvents.length > 0,
-
                 events: dayEvents
-
             });
         }
 
@@ -243,8 +331,8 @@ export default function EventsPage() {
     );
 
     const calendarDays = useMemo(() => {
-    return getCalendarDays();
-}, [filteredEvents, selectedMonth, selectedYear]);
+        return getCalendarDays();
+    }, [calendarEvents, selectedMonth, selectedYear]);
     const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
     return (
@@ -459,7 +547,7 @@ export default function EventsPage() {
                                                     className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
                                                 />
                                             </div>
-                                        </div>                                   
+                                        </div>
                                     </h2>
                                     <div className="flex gap-2">
                                         <button
@@ -523,7 +611,7 @@ export default function EventsPage() {
                                                                     <div key={eIdx} className="bg-white/60 border border-[#D6A646]/30 rounded-md p-1.5 text-left hover:bg-white/80 transition-colors">
                                                                         <div className="text-xs font-bold text-slate-800 truncate" title={evt.title}>{evt.title}</div>
                                                                         <div className="text-[10px] text-slate-500 truncate flex items-center gap-0.5 mt-0.5">
-                                                                            <MapPin size={8} /> 
+                                                                            <MapPin size={8} />
                                                                             <span className="truncate">{evt.location}</span>
                                                                         </div>
                                                                     </div>
@@ -548,17 +636,17 @@ export default function EventsPage() {
                                         <div className="w-3 h-3 rounded-full bg-[#D6A646]"></div>
                                         <span className="text-xs text-slate-600">Events scheduled</span>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    {/* <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
                                         <span className="text-xs text-slate-600">Faith Formation</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-rose-500"></div>
                                         <span className="text-xs text-slate-600">Pro-Life</span>
-                                    </div>
+                                    </div> */}
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-                                        <span className="text-xs text-slate-600">Men</span>
+                                        <span className="text-xs text-slate-600">Today</span>
                                     </div>
                                 </div>
                             </div>
@@ -587,11 +675,11 @@ export default function EventsPage() {
                                                 <tr>
                                                     <td colSpan="6" className="text-center py-8 text-slate-500">Loading events...</td>
                                                 </tr>
-                                            ) : filteredEvents.length === 0 ? (
+                                            ) : paginatedEvents.length === 0 ? (
                                                 <tr>
                                                     <td colSpan="6" className="text-center py-8 text-slate-500">No events found matching filters.</td>
                                                 </tr>
-                                            ) : filteredEvents.map((event, index) => (
+                                            ) : paginatedEvents.map((event, index) => (
                                                 <tr key={event.id} className={`border-t border-slate-100 hover:bg-slate-50/80 transition-colors group ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
@@ -614,27 +702,48 @@ export default function EventsPage() {
                                                             {event.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            <button 
-                                                                onClick={() => setSelectedEvent(event.fullData)}
-                                                                className="border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-all font-medium text-sm flex items-center gap-1"
-                                                            >
-                                                                <Eye size={14} /> View
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => router.push(`/dashboard/events/add?editId=${event.id}`)}
-                                                                className="bg-[#082B63] hover:bg-[#0B3578] transition-all text-white px-3 py-1.5 rounded-lg font-medium text-sm flex items-center gap-1 shadow-sm"
-                                                            >
-                                                                <Edit size={14} /> Edit
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDelete(event.id)}
-                                                                className="border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all font-medium text-sm flex items-center gap-1"
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
-                                                        </div>
+                                                    <td className="px-6 py-4 text-right relative dropdown-container">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActiveDropdownId(activeDropdownId === event.id ? null : event.id);
+                                                            }}
+                                                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all"
+                                                        >
+                                                            <MoreVertical size={20} />
+                                                        </button>
+                                                        {activeDropdownId === event.id && (
+                                                            <div className="absolute right-8 top-10 w-36 bg-white border border-slate-200 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] z-50 overflow-hidden py-1">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedEvent(event.fullData);
+                                                                        setActiveDropdownId(null);
+                                                                    }}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-[#082B63] flex items-center gap-2.5 transition-colors"
+                                                                >
+                                                                    <Eye size={16} /> View
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        router.push(`/dashboard/events/add?editId=${event.id}`);
+                                                                        setActiveDropdownId(null);
+                                                                    }}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-[#082B63] flex items-center gap-2.5 transition-colors"
+                                                                >
+                                                                    <Edit size={16} /> Edit
+                                                                </button>
+                                                                <div className="border-t border-slate-100 my-1"></div>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        handleDelete(event.id);
+                                                                        setActiveDropdownId(null);
+                                                                    }}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors"
+                                                                >
+                                                                    <Trash2 size={16} /> Delete
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -643,19 +752,33 @@ export default function EventsPage() {
                                 </div>
 
                                 {/* Pagination */}
-                                <div className="px-6 py-5 border-t border-slate-100 flex justify-between items-center bg-slate-50/30">
-                                    <p className="text-sm text-slate-500 font-medium">Showing 1-{filteredEvents.length} of {totalEvents} events</p>
-                                    <div className="flex gap-2">
-                                        <button className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1">
-                                            <ChevronLeft size={16} /> Previous
-                                        </button>
-                                        <button className="bg-gradient-to-r from-[#082B63] to-[#1E4AA8] text-white px-4 py-2 rounded-xl font-semibold text-sm shadow-md">1</button>
-                                        <button className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all px-4 py-2 rounded-xl font-semibold text-sm">2</button>
-                                        <button className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-all px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1">
-                                            Next <ChevronRight size={16} />
-                                        </button>
+                                {totalPages > 0 && (
+                                    <div className="px-6 py-5 border-t border-slate-100 flex justify-between items-center bg-slate-50/30">
+                                        <p className="text-sm text-slate-500 font-medium">
+                                            Showing {totalItems > 0 ? (currentPage - 1) * limit + 1 : 0}-
+                                            {Math.min(currentPage * limit, totalItems)} of {totalItems} events
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                disabled={currentPage === 1}
+                                                className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1"
+                                            >
+                                                <ChevronLeft size={16} /> Previous
+                                            </button>
+
+                                            {renderPaginationButtons()}
+
+                                            <button
+                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                disabled={currentPage === totalPages}
+                                                className="border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1"
+                                            >
+                                                Next <ChevronRight size={16} />
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -669,7 +792,7 @@ export default function EventsPage() {
                                 Upcoming This Week
                             </h3>
                             <div className="space-y-3">
-                                {upcomingEvents.map((event) => (
+                                {upcomingEventsList.map((event) => (
                                     <div key={event.id} className="group p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer border border-transparent hover:border-slate-200">
                                         <div className="flex items-start gap-3">
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${event.category === 'Faith Formation' ? 'bg-purple-100' : 'bg-slate-100'}`}>
@@ -819,7 +942,7 @@ export default function EventsPage() {
                                                 </div>
                                             </div>
                                             <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-3">
-                                                <button 
+                                                <button
                                                     onClick={() => setSelectedEvent(evt.fullData)}
                                                     className="px-3 py-1.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors flex items-center gap-1.5"
                                                 >
@@ -836,7 +959,7 @@ export default function EventsPage() {
                                     </div>
                                     <h4 className="text-lg font-bold text-slate-900 mb-2">No Events Scheduled</h4>
                                     <p className="text-slate-500 mb-6 max-w-sm mx-auto">There are currently no events scheduled for this day. Would you like to create one?</p>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             const d = selectedDateData.date;
                                             const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -889,7 +1012,7 @@ export default function EventsPage() {
                         {/* Header Image / Pattern Area */}
                         <div className="h-32 bg-gradient-to-r from-[#082B63] to-[#1E4AA8] rounded-t-3xl relative overflow-hidden">
                             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
-                            <button 
+                            <button
                                 onClick={() => setSelectedEvent(null)}
                                 className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full backdrop-blur-sm transition-all"
                             >
@@ -920,7 +1043,7 @@ export default function EventsPage() {
                                     </div>
                                 </div>
                                 <div className="pb-1 flex gap-2 w-full sm:w-auto mt-4 sm:mt-0">
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setSelectedEvent(null);
                                             router.push(`/dashboard/events/add?editId=${selectedEvent._id}`);
@@ -989,7 +1112,7 @@ export default function EventsPage() {
                                             <Info size={18} className="text-[#082B63]" />
                                             Quick Facts
                                         </h3>
-                                        
+
                                         <div className="space-y-4">
                                             <div className="flex items-start gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
@@ -1018,7 +1141,7 @@ export default function EventsPage() {
                                                     <p className="text-sm font-semibold text-slate-900">{selectedEvent.hostMinistry || 'Unassigned'}</p>
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="flex items-start gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
                                                     <MapPin size={16} />
@@ -1041,7 +1164,7 @@ export default function EventsPage() {
                                             <Mail size={18} className="text-[#D6A646]" />
                                             Contact Info
                                         </h3>
-                                        
+
                                         <div className="space-y-4">
                                             <p className="text-sm font-semibold text-white mb-2">{selectedEvent.contactPerson || 'General Contact'}</p>
                                             {selectedEvent.contactEmail && (
